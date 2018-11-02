@@ -1,0 +1,48 @@
+# 额外说明：默认普通 mongod 使用端口 27017，shardsvr 的 mongod 使用端口 27018， configsvr 的 mongod 使用端口 27019，mongos 使用端口 27017
+# 通过配置文件，统一改成27017
+
+version: '3'
+
+# 该 stack 共用网络 mongo
+networks:
+  mongo:
+
+  
+services:
+
+# replication 脚本自动填充
+
+# mongos
+  <SVC_NAME>:
+    image: <MONGO_IMAGE>
+    command: mongos -f /data/mongod.conf
+    networks:
+      - mongo
+    volumes:
+      - <RS_PATH>/configdb:/data/configdb
+      - <RS_PATH>/db:/data/db
+      - <CONF_PATH>/mongod.conf:/data/mongod.conf
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: <MONGOS_ROOT_USERNAME>
+      MONGO_INITDB_ROOT_PASSWORD: <MONGOS_ROOT_PASSWORD>
+    ports:
+      - 27017:<PORT>
+    depends_on: # depends_on 脚本自动填充
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+# mongo-express
+  mongo-express:
+    image: mongo-express
+    restart: always
+    networks:
+      - mongo
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_SERVER: <SVC_NAME>
+      ME_CONFIG_MONGODB_ADMINUSERNAME: <MONGOS_ROOT_USERNAME>
+      ME_CONFIG_MONGODB_ADMINPASSWORD: <MONGOS_ROOT_PASSWORD>
+      ME_CONFIG_BASICAUTH_USERNAME: <WEB_USERNAME>
+      ME_CONFIG_BASICAUTH_PASSWORD: <WEB_PASSWORD>

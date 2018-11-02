@@ -1,0 +1,11 @@
+{
+    "server":"ssh.xn--9kq677j3ki.app",
+    "server_port":13625,
+    "password":"sQcaLf",
+    "local_address": "192.168.1.8",
+    "local_port":1080,
+    "timeout":300,
+    "method":"chacha20",
+    "fast_open": true,
+    "workers":1
+}

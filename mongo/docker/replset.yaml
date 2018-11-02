@@ -1,0 +1,12 @@
+  <SVC_NAME>:
+    image: <MONGO_IMAGE>
+    command: mongod -f /data/mongod.conf
+    networks:
+      - mongo
+    volumes:
+      - <RS_PATH>/configdb:/data/configdb
+      - <RS_PATH>/db:/data/db
+      - <CONF_PATH>/mongod.conf:/data/mongod.conf
+    deploy:
+      restart_policy:
+        condition: on-failure

@@ -1,0 +1,102 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: mysql
+data:
+  # 主
+  master.cnf: |
+    [mysqld]
+    
+    character-set-server=utf8mb4
+    collation-server=utf8mb4_unicode_ci
+    default-storage-engine=INNODB
+    
+    sql_mode=NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES
+    
+    log-bin=/var/lib/mysql/binlog
+    log_bin_trust_function_creators=1
+    binlog_format=ROW
+    expire_logs_days=99
+    sync_binlog=0
+    
+    slow-query-log=1
+    slow-query-log-file=/var/lib/mysql/slow-queries.log
+    long_query_time=3
+    log-queries-not-using-indexes
+    
+    lower_case_table_names = 1
+    
+  # 从 
+  slave.cnf: |
+    [mysqld]
+    
+    character-set-server=utf8mb4
+    collation-server=utf8mb4_unicode_ci
+    default-storage-engine=INNODB
+    
+    #Optimize omit
+    
+    sql_mode=NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES
+    
+    log-bin     = /var/lib/mysql/binlog
+    log_bin_trust_function_creators=1
+    binlog_format = ROW
+    expire_logs_days = 99
+    sync_binlog = 0
+    
+    relay_log=slave-relay-bin
+    log-slave-updates=1
+    slave-skip-errors=all
+    
+    slow-query-log=1
+    slow-query-log-file=/var/lib/mysql/slow-queries.log
+    long_query_time = 3
+    
+    log-queries-not-using-indexes
+    
+    lower_case_table_names = 1
+  
+  # 单机  
+  my.cnf: |
+    [mysqld]
+    # pid-file = /data/mysql/mysqld.pid
+    # socket = /data/mysql/mysqld.sock
+    # datadir = /var/lib/mysql
+    character_set_server = utf8mb4
+    collation_server = utf8mb4_bin
+    back_log = 1024
+    lower_case_table_names = 1
+    
+  # 多主  
+  mmaster.cnf: |
+    [mysqld]
+    
+    character-set-server=utf8mb4
+    collation-server=utf8mb4_unicode_ci
+    default-storage-engine=INNODB
+    
+    sql_mode=NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES
+    
+    log-bin=/var/lib/mysql/binlog
+    log_bin_trust_function_creators=1
+    binlog_format=ROW
+    expire_logs_days=99
+    #事务特性,最好设为1
+    sync_binlog=1
+    
+    slow-query-log=1
+    slow-query-log-file=/var/lib/mysql/slow-queries.log
+    long_query_time=3
+    log-queries-not-using-indexes
+    
+    lower_case_table_names = 1
+    
+    #作为从服务器时的中继日志
+    relay_log=slave-relay-bin
+    log-slave-updates=1
+    #每次步长增长值#
+    auto_increment_increment=2
+    #起始步长值两边都要不一样#
+    auto_increment_offset=2
+
+    

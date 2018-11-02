@@ -1,0 +1,67 @@
+#!/bin/bash
+#
+#this script use for init mongo shard cluster
+
+HOST=192.168.1.9
+PORT=10000
+
+SCRIPT_FILE=$(readlink -f $0)
+SCRIPT_DIR=$(dirname $SCRIPT_FILE)
+
+echo "创建复制集中每个节点存放数据目录："
+mkdir -p $SCRIPT_DIR/mongodata/data
+
+echo "创建复制集中每个节点的日志目录："
+mkdir -p $SCRIPT_DIR/mongodata/logs
+
+echo "创建复制集中每个节点启动时所需的配置文件："
+cat <<EOF > $SCRIPT_DIR/mongodata/mongo.conf
+dbpath = $SCRIPT_DIR/mongodata/data
+logpath = $SCRIPT_DIR/mongodata/logs/mongo.log
+pidfilepath = $SCRIPT_DIR/mongodata/mongo.pid
+logappend = true
+journal = true
+port = $PORT
+fork = true
+maxConns = 5000
+bind_ip = $HOST
+EOF
+
+cat <<EOF > $SCRIPT_DIR/start.sh
+#!/bin/bash
+echo "启动节点对应的mongodb实例：/opt/mongodb/bin/mongod -f $SCRIPT_DIR/mongodata/mongo.conf" 
+/opt/mongodb/bin/mongod -f $SCRIPT_DIR/mongodata/mongo.conf
+EOF
+chmod a+x $SCRIPT_DIR/start.sh
+$SCRIPT_DIR/start.sh
+
+cat <<EOF > $SCRIPT_DIR/connect.sh
+#!/bin/bash
+/opt/mongodb/bin/mongo --host $HOST --port $PORT
+EOF
+chmod a+x $SCRIPT_DIR/connect.sh
+
+cat <<EOF > $SCRIPT_DIR/stop.sh
+#!/bin/bash
+echo "终止节点对应的mongodb实例：kill 15 \`cat $SCRIPT_DIR/mongodata/mongo.pid\`"
+kill 15 \`cat $SCRIPT_DIR/mongodata/mongo.pid\`
+EOF
+chmod a+x $SCRIPT_DIR/stop.sh
+
+cat <<EOF > $SCRIPT_DIR/reset.sh
+#!/bin/bash
+echo "终止节点对应的mongodb实例：kill 15 \`cat $SCRIPT_DIR/mongodata/mongo.pid\`"
+kill 15 \`cat $SCRIPT_DIR/mongodata/mongo.pid\`
+rm -rf $SCRIPT_DIR/mongodata $SCRIPT_DIR/s* $SCRIPT_DIR/connect.sh $SCRIPT_DIR/reset.sh
+EOF
+chmod a+x $SCRIPT_DIR/reset.sh
+
+
+echo "6、db01下进入mongodb客户端："
+/opt/mongodb/bin/mongo --host $HOST --port $PORT <<EOF
+use myTest
+db.users.insert({userid:1, name:"Hui", age:20})
+db.users.insert({userid:2, name:"Huile", age:25})
+db.users.find()
+EOF
+

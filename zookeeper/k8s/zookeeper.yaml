@@ -1,0 +1,185 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: zookeeper
+data:
+  zoo.cfg: |
+    clientPort=2181
+    dataDir=/data
+    dataLogDir=/data/log
+    tickTime=2000
+    initLimit=10
+    syncLimit=5
+    minSessionTimeout=4000
+    maxSessionTimeout=40000
+    autopurge.snapRetainCount=3
+    autopurge.purgeInterval=12
+    maxClientCnxns=60
+    server.1=zookeeper-0.zookeeper.default.svc.cluster.local:2888:3888
+    server.2=zookeeper-1.zookeeper.default.svc.cluster.local:2888:3888
+    server.3=zookeeper-2.zookeeper.default.svc.cluster.local:2888:3888
+  zoo_servers: "server.1=zookeeper-0.zookeeper:2888:3888 server.2=zookeeper-1.zookeeper:2888:3888 server.3=zookeeper-2.zookeeper:2888:3888"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zk
+  labels:
+    mid: zookeeper
+spec:
+  selector:
+    mid: zookeeper
+  type: NodePort
+  ports:
+  - name: client
+    nodePort: 32181
+    port: 2181
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper
+  labels:
+    mid: zookeeper
+spec:
+  selector:
+    mid: zookeeper
+  clusterIP: None
+  ports:
+  - name: server
+    port: 2888
+  - name: leader-election
+    port: 3888
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: pv-zk1
+  labels:
+    mid: zookeeper
+spec:
+  storageClassName: zookeeper
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/data/zookeeper/data1"
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: pv-zk2
+  labels:
+    mid: zookeeper
+spec:
+  storageClassName: zookeeper
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/data/zookeeper/data2"
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: pv-zk3
+  labels:
+    mid: zookeeper
+spec:
+  storageClassName: zookeeper
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/data/zookeeper/data3"
+---
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: pdb-zk
+spec:
+  selector:
+    matchLabels:
+      mid: zookeeper
+  maxUnavailable: 1
+---
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: zookeeper
+spec:
+  selector:
+    matchLabels:
+      mid: zookeeper
+  serviceName: zookeeper
+  replicas: 3
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        mid: zookeeper
+    spec:
+      initContainers:
+      - name: init-zookeeper
+        image: zookeeper
+        command:
+        - bash
+        - "-c"
+        - |
+          set -ex
+          # Generate mysql server-id from pod ordinal index.
+          [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
+          ordinal=${BASH_REMATCH[1]}
+          echo $((1 + $ordinal)) >> /data/myid
+        volumeMounts:
+        - name: datadir
+          mountPath: /data
+      containers:
+      - name: zookeeper
+        image: zookeeper
+        lifecycle:
+          postStart:
+            exec:
+              command: ["bash", "-c", "cp /mnt/config-map/zoo.cfg /conf/zoo.cfg"]
+        #env:
+        # 由于使用postStart cp zoo.cfg，导致启动脚本中对环境变量ZOO_SERVERS的使用失效
+        #- name: ZOO_SERVERS
+        #  #value: "server.1=zookeeper-1.zookeeper:2888:3888 server.2=zookeeper-2.zookeeper:2888:3888 server.3=zookeeper-3.zookeeper:2888:3888"
+        #  valueFrom:
+        #    configMapKeyRef:
+        #      name: zookeeper
+        #      key: zoo_servers
+        ports:
+        - name: client
+          containerPort: 2181
+        - name: server
+          containerPort: 2888
+        - name: leader-election
+          containerPort: 3888
+        volumeMounts:
+        - name: datadir
+          mountPath: /data
+        - name: config-map
+          mountPath: /mnt/config-map
+      volumes:
+      - name: config-map
+        configMap:
+          name: zookeeper
+          #items: 
+          #- key: zoo.cfg
+          #  path: zoo.cfg
+      #- name: data
+      #  persistentVolumeClaim:
+      #    claimName: zookeeper
+  volumeClaimTemplates:
+  - metadata:
+      name: datadir
+    spec:
+      storageClassName: zookeeper
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi

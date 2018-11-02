@@ -1,0 +1,26 @@
+[mysqld]
+server_id = 5 
+
+character-set-server=utf8mb4
+collation-server=utf8mb4_unicode_ci
+default-storage-engine=INNODB
+
+#Optimize omit
+
+sql_mode=NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES
+
+log-bin     = /var/lib/mysql/binlog
+log_bin_trust_function_creators=1
+binlog_format = ROW
+expire_logs_days = 99
+sync_binlog = 0
+
+relay_log=slave-relay-bin
+log-slave-updates=1
+slave-skip-errors=all
+
+slow-query-log=1
+slow-query-log-file=/var/log/mysql/slow-queries.log
+long_query_time = 3
+
+log-queries-not-using-indexes

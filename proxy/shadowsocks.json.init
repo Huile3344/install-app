@@ -1,0 +1,11 @@
+{
+    "server":"<server>",
+    "server_port":<server_port>,
+    "password":"<password>",
+    "local_address": "<local_address>",
+    "local_port":<local_port>,
+    "timeout":<timeout>,
+    "method":"<method>",
+    "fast_open": <fast_open>,
+    "workers":<workers>
+}

@@ -1,0 +1,51 @@
+# mongod.conf
+
+# for documentation of all options, see:
+#   http://docs.mongodb.org/manual/reference/configuration-options/
+
+# Where and how to store data.
+storage:
+  dbPath: <DB_PATH> # /data/db
+  journal:
+    enabled: true # <JOURNAL_ENABLED> # true
+#  engine:
+#  mmapv1:
+#  wiredTiger:
+
+# where to write logging data.
+systemLog:
+  destination: syslog # docker 方式启动必须是syslog，否则启动报错
+  logAppend: true
+
+# network interfaces
+net:
+  port: <PORT> # 27017
+  bindIp: 0.0.0.0 #<BIND_IP> # 127.0.0.1
+
+
+# how the process runs
+#processManagement:
+#  fork: false
+#  timeZoneInfo: /usr/share/zoneinfo
+
+#security:
+
+#operationProfiling:
+
+replication:
+  replSetName: <REPL_NAME>
+#  # mongos-only Options
+#  localPingThresholdMs
+
+sharding:
+  clusterRole: <CLUSTER_ROLE> # configsvr 或 shardsvr
+#  # mongos-only Options
+  configDB: <CONFIG_DB> # 若非mongos，改行需要删除
+
+## Enterprise-Only Options:
+
+#auditLog:
+
+#snmp:
+
+

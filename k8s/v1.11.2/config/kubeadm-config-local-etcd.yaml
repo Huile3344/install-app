@@ -1,0 +1,47 @@
+apiVersion: kubeadm.k8s.io/v1alpha2
+kind: MasterConfiguration
+kubernetesVersion: v1.11.2
+#apiServerCertSANs:
+#- 192.168.1.8
+#- 172.31.244.232
+#- 172.31.244.233
+#- 172.31.244.234
+#- master1
+#- master2
+#- master3
+#- node1
+#- 47.75.1.72
+
+etcd:
+  local:
+    serverCertSANs:
+      - 192.168.1.8
+      - node
+    peerCertSANs:
+      - 192.168.1.8
+      - node
+    extraArgs:
+      name: etcd1
+      initial-cluster-state: new  # new or existing
+      initial-cluster: etcd1=https://192.168.1.8:2380
+      listen-peer-urls: https://127.0.0.1:2380,https://192.168.1.8:2380
+      listen-client-urls: https://127.0.0.1:2379,https://192.168.1.8:2379
+      advertise-client-urls: https://192.168.1.8:2379
+      initial-advertise-peer-urls: https://192.168.1.8:2380
+ 
+#api:
+#  advertiseAddress: 192.168.1.8
+#  controlPlaneEndpoint: 192.168.1.8:8443
+
+controllerManagerExtraArgs:
+  node-monitor-grace-period: 10s
+  pod-eviction-timeout: 10s
+  
+apiServerExtraArgs:
+  endpoint-reconciler-type: lease
+  
+networking:
+  podSubnet: <POD_SUBNET>
+  
+featureGates:
+   CoreDNS: true

@@ -1,0 +1,415 @@
+#!/bin/bash
+
+Tips(小技巧):
+1、忘记初始化master节点时的node节点join集群命令怎么办？
+a. 简单方法
+kubeadm token create --print-join-command
+b. 第二种方法
+kubeadm token create $(kubeadm token generate) --print-join-command --ttl=0
+
+
+2、获取默认服务账号的token值
+$ APISERVER=$(kubectl config view --minify | grep server | cut -f 2- -d ":" | tr -d " ")
+$ TOKEN=$(kubectl describe secret $(kubectl get secrets | grep ^default | cut -f1 -d ' ') | grep -E '^token' | cut -f2 -d':' | tr -d " ")
+$ curl $APISERVER/api --header "Authorization: Bearer $TOKEN" --insecure
+{
+  "kind": "APIVersions",
+  "versions": [
+    "v1"
+  ],
+  "serverAddressByClientCIDRs": [
+    {
+      "clientCIDR": "0.0.0.0/0",
+      "serverAddress": "10.0.1.149:443"
+    }
+  ]
+}
+
+
+10、配置calico的tls修改说明
+a. 将 calico.yaml 中 ConfigMap calico-config 的以下内容
+  etcd_endpoints: "http://10.96.232.136:6666"
+更改为对应etcd的值如：
+  etcd_endpoints: "https://192.168.1.9:2379"
+b. 将 calico.yaml 中 ConfigMap calico-config 的以下内容
+  # If you're using TLS enabled etcd uncomment the following.
+  # You must also populate the Secret below with these files.
+  etcd_ca: ""   # "/calico-secrets/etcd-ca"
+  etcd_cert: "" # "/calico-secrets/etcd-cert"
+  etcd_key: ""  # "/calico-secrets/etcd-key"
+更改为(对应值必须是这样，后续calico内部)
+  etcd_ca: "/calico-secrets/etcd-ca"
+  etcd_cert: "/calico-secrets/etcd-cert"
+  etcd_key: "/calico-secrets/etcd-key"
+c. 将 calico.yaml 中 Secret calico-etcd-secrets 的以下内容
+  # Populate the following files with etcd TLS configuration if desired, but leave blank if
+  # not using TLS for etcd.
+  # This self-hosted install expects three files with the following names.  The values
+  # should be base64 encoded strings of the entire contents of each file.
+  # etcd-key: null
+  # etcd-cert: null
+  # etcd-ca: null
+更改为对应文件的base64加密值，即命令：cat /opt/etcd/pki/ca.pem | base64 | tr -d '\n' 对应的值
+  etcd-key: cat /opt/etcd/pki/client-key.pem | base64 | tr -d '\n' 返回值
+  etcd-cert: cat /opt/etcd/pki/client.pem | base64 | tr -d '\n' 返回值
+  etcd-ca: cat /opt/etcd/pki/ca.pem | base64 | tr -d '\n' 返回值
+d. 将 calico.yaml 中 DaemonSet calico-node 的以下内容中的value该为对应的值
+  # The default IPv4 pool to create on startup if none exists. Pod IPs will be
+  # chosen from this range. Changing this value after installation will have
+  # no effect. This should fall within `--cluster-cidr`.
+  - name: CALICO_IPV4POOL_CIDR
+  value: "192.168.0.0/16"
+如更改为：10.244.0.0/12
+e. 将 calicoctl.yaml 中关于 tls 相关配置的相关注释内容开启
+  
+# ********kubectl命令自动补全*******
+# kubectl这个命令行工具非常重要，与之相关的命令也很多，我们也记不住那么多的命令，而且也会经常写错，所以命令自动补全是非常有必要的，kubectl命令行工具本身就支持complication，只需要简单的设置下就可以了。以下是linux系统的设置命令：
+# 
+# source <(kubectl completion bash)
+# echo "source <(kubectl completion bash)" >> ~/.bashrc
+# 
+
+# 网上可参考博客：kubernetes1.9离线部署(https://blog.csdn.net/liu9718214/article/details/79242849)
+
+#指定使用的kubernetes版本
+RELEASE = v1.10.0
+
+# 一、Docker相关(适用于kubernetes-1.9.0和kubernetes-1.10.1-beta.0)和启动registry:2
+# 1. 安装docker
+yum install docker-ce-selinux-17.03.2.ce-1.el7.centos.noarch.rpm docker-ce-17.03.2.ce-1.el7.centos.x86_64.rpm
+
+# 2. 将docker加入开机启动进程中，且启动docker
+systemctl enable docker && systemctl start docker
+
+# 3. 将registry:2镜像(或本地镜像)load到docker中
+docker load -i registry.tar
+
+# 4. 将已有的私服镜像压缩文件(docker-registry.tar.gz)解压的本机的/opt目录下，作为私服初始镜像目录
+tar -C /opt -zxf docker-registry.tar.gz 
+
+# 5. 将私服镜像目录挂载到registry镜像容器的镜像目录中，当前绑定了主机的5000端口，启动docker私服镜像（后续服务器重启也会自动启动）
+docker run -d -v /opt/docker-registry/:/var/lib/registry/ -p 5000:5000 --restart always --name registry-v2 registry:2
+
+# 6. 添加主机ip和主机名到hosts中
+echo "192.169.1.6  docker.registry" >>  /etc/hosts
+
+# 7. 配置镜像加速器(针对Docker客户端版本大于1.10.0的用户)和私服信息
+sudo mkdir -p /etc/docker
+sudo tee /etc/docker/daemon.json <<-'EOF'
+{
+	"insecure-registries":["docker.registry:5000"],
+  "registry-mirrors": ["https://c174fa3u.mirror.aliyuncs.com"]
+}
+EOF
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+
+
+
+# 二、解压kubernetes/server/kubernetes-server-linux-amd64.tar.gz，且将kubernetes/server/kubernetes/server/bin/目录中的二进制可执行文件拷贝到/usr/lib/目录中
+cp kubeadm kube-aggregator kube-apiserver kube-controller-manager kubectl kubelet kube-proxy kube-scheduler /usr/bin/
+cp apiextensions-apiserver cloud-controller-manager hyperkube mounter /usr/bin/
+# 关闭防火墙和selinux
+systemctl disable firewalld && systemctl stop firewalld
+setenforce 0
+
+
+
+# 三 网络问题配置
+# Note:
+# Disabling SELinux by running setenforce 0 is required to allow containers to access the host filesystem, which is required by pod networks for example. You have to do this until SELinux support is improved in the kubelet.
+# Some users on RHEL/CentOS 7 have reported issues with traffic being routed incorrectly due to iptables being bypassed. You should ensure net.bridge.bridge-nf-call-iptables is set to 1 in your sysctl config, e.g.
+
+cat <<EOF >  /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF
+sysctl --system
+
+
+
+
+# 四
+# Install kubeadm, kubelet, kubectl and add a kubelet systemd service:
+
+# 1. a、联网方式：
+# curl -sSL "https://raw.githubusercontent.com/kubernetes/kubernetes/${RELEASE}/build/debs/kubelet.service" > /etc/systemd/system/kubelet.service
+# mkdir -p /etc/systemd/system/kubelet.service.d
+# curl -sSL "https://raw.githubusercontent.com/kubernetes/kubernetes/${RELEASE}/build/debs/10-kubeadm.conf" > /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+
+# 1. b、本地方式：将kubernetes/server/config中两个配置文件拷贝到指定目录
+cp kubelet.service /etc/systemd/system/kubelet.service
+mkdir -p /etc/systemd/system/kubelet.service.d
+cp 10-kubeadm.conf /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+
+
+# 2.Enable and start kubelet:
+# 将kubelet加入开机启动进程中，且启动kubelet
+# systemctl enable kubelet && systemctl start kubelet
+# 其实此时是启动不了的，这是因为很多地方下载的10-kubeadm.conf的文件已经被修改过，但是我们此处使用的是k8s官方提供的，
+# 否则会有如下报错日志信息：
+# unable to load client CA file /etc/kubernetes/pki/ca.crt: open /etc/kubernetes/pki/ca.crt: no such file or directory
+# 因为没有证书信息，这部分会在kubeadm init时自动生成
+systemctl enable kubelet
+
+
+# Configure cgroup driver used by kubelet on Master Node
+# Make sure that the cgroup driver used by kubelet is the same as the one used by Docker. Verify that your Docker cgroup driver matches the kubelet config:
+
+docker info | grep -i cgroup
+cat /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+# If the Docker cgroup driver and the kubelet config don’t match, change the kubelet config to match the Docker cgroup driver. The flag you need to change is --cgroup-driver. If it’s already set, you can update like so:
+
+sed -i "s/cgroup-driver=systemd/cgroup-driver=cgroupfs/g" /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+# Otherwise, you will need to open the systemd file and add the flag to an existing environment line.
+
+# Then restart kubelet:
+systemctl daemon-reload
+systemctl restart kubelet
+
+
+# 五、使用kubeadm初始化master集群节点
+# 关闭swap，否则执行失败
+swapoff -a
+
+# 若是在网络隔离情况，或者无法上网访问到Google镜像仓库k8s.gcr.io（默认从此仓库拉取镜像），如拉取镜像：k8s.gcr.io/pause-amd64:3.1，
+# 执行命令：kubeadm init --config config.yaml
+# 执行命令后将在终端看到输出：
+# [init] This might take a minute or longer if the control plane images have to be pulled.
+# 日志后，会去Google镜像仓库拉取所需经镜像，导致等待很长时候后，输出如下日志：
+
+# Unfortunately, an error has occurred:
+# 	timed out waiting for the condition
+# 
+# This error is likely caused by:
+# 	- The kubelet is not running
+# 	- The kubelet is unhealthy due to a misconfiguration of the node in some way (required cgroups disabled)
+# 	- Either there is no internet connection, or imagePullPolicy is set to "Never",
+# 	  so the kubelet cannot pull or find the following control plane images:
+# 		- docker.registry/kube-apiserver-amd64:v1.10.0
+# 		- docker.registry/kube-controller-manager-amd64:v1.10.0
+# 		- docker.registry/kube-scheduler-amd64:v1.10.0
+# 		- docker.registry/etcd-amd64:3.1.12 (only if no external etcd endpoints are configured)
+# 
+# If you are on a systemd-powered system, you can try to troubleshoot the error with the following commands:
+# 	- 'systemctl status kubelet'
+# 	- 'journalctl -xeu kubelet'
+# couldn't initialize a Kubernetes cluster
+
+# 然后集群master初始化失败。详细日志可在：/var/log/message 中查看到(使用dockerd查找)
+# 或使用命令'journalctl -xeu kubelet'查看(其实就是看的前面指的日志文件，通过左右方向键可移动终端显示内容)，
+# 或使用命令'journalctl -u kubelet -f'查看滚动日志(其实就是看新刷出来的日志，类似 tail -f 文件)，
+# 会有类似如下日志信息：
+# Apr  5 10:44:38 centos dockerd: time="2018-04-05T10:44:38.023640221+08:00" level=error msg="Handler for GET /v1.27/images/k8s.gcr.io/pause-amd64:3.1/json returned error: No such image: k8s.gcr.io/pause-amd64:3.1"
+# 提示拉取镜像k8s.gcr.io/pause-amd64:3.1失败
+
+######## 解决方法：
+# 方案1：
+# 本地已经下载好这部分镜像(docker load -i k8s-v1.10.0.tar)
+#
+# 方案2：
+# 需要在本地私服中先下载好镜像(image:tag)：kube-apiserver-amd64:v1.10.0, kube-controller-manager-amd64:v1.10.0, 
+# kube-scheduler-amd64:v1.10.0, etcd-amd64:3.1.12, pause-amd64:3.1
+# 这部分镜像可在阿里云容器Hub(https://dev.aliyun.com/list.html)中搜索到，一般情况已经有用户上传这部分镜像
+# 同时在config.yaml中加入参数项：imageRepository: "docker.registry:5000"，否则默认使用谷歌镜像仓库，而不是本地镜像仓库
+kubeadm init --config config.yaml
+
+#######  start DNS ########
+
+
+#-------  start Calico -------#
+# 1. As a regular user with sudo privileges, open a terminal on the host that you installed kubeadm on.
+
+
+# 2. Initialize the master using the following command.
+# Note:
+# In order for Network Policy to work correctly, you need to pass --pod-network-cidr=192.168.0.0/16 to kubeadm init.
+# Calico works on amd64 only.
+# kubeadm init --pod-network-cidr=192.168.0.0/16
+
+
+# 3. Execute the following commands to configure kubectl (also returned by kubeadm init).
+# a、if you are not the root user, you could run this:
+# mkdir -p $HOME/.kube
+# sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+# sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+# b、if you are the root user, you could run this:
+export KUBECONFIG=/etc/kubernetes/admin.conf
+
+
+# 4. Install Calico and a single node etcd with the following command.
+# a、联网获取方式
+# kubectl apply -f https://docs.projectcalico.org/v3.0/getting-started/kubernetes/installation/hosted/kubeadm/1.7/calico.yaml
+
+# b、本地方式
+kubectl apply -f calico.yaml
+
+# You should see the following output.
+# configmap "calico-config" created
+# daemonset "calico-etcd" created
+# service "calico-etcd" created
+# daemonset "calico-node" created
+# deployment "calico-kube-controllers" created
+# clusterrolebinding "calico-cni-plugin" created
+# clusterrole "calico-cni-plugin" created
+# serviceaccount "calico-cni-plugin" created
+# clusterrolebinding "calico-kube-controllers" created
+# clusterrole "calico-kube-controllers" created
+# serviceaccount "calico-kube-controllers" created
+
+
+
+# 5. Confirm that all of the pods are running with the following command.
+
+kubectl get nodes -o wide
+# It should return something like the following. node has the STATUS of NotReady
+
+# NAME             STATUS  ROLES   AGE  VERSION  EXTERNAL-IP  OS-IMAGE            KERNEL-VERSION     CONTAINER-RUNTIME
+# <your-hostname>  NotReady   master  3m   v1.8.x   <none>       Ubuntu 16.04.3 LTS  4.10.0-28-generic  docker://1.12.6
+
+
+watch kubectl get pods --all-namespaces
+# Wait until each pod has the STATUS of Running.
+
+# NAMESPACE    NAME                                       READY  STATUS   RESTARTS  AGE
+# kube-system  calico-etcd-x2482                          1/1    Running  0         2m
+# kube-system  calico-kube-controllers-6ff88bf6d4-tgtzb   1/1    Running  0         2m
+# kube-system  calico-node-24h85                          2/2    Running  0         2m
+# kube-system  etcd-jbaker-virtualbox                     1/1    Running  0         6m
+# kube-system  kube-apiserver-jbaker-virtualbox           1/1    Running  0         6m
+# kube-system  kube-controller-manager-jbaker-virtualbox  1/1    Running  0         6m
+# kube-system  kube-dns-545bc4bfd4-67qqp                  3/3    Running  0         5m
+# kube-system  kube-proxy-8fzp2                           1/1    Running  0         5m
+# kube-system  kube-scheduler-jbaker-virtualbox           1/1    Running  0         5m
+
+
+# 6. Press CTRL+C to exit watch.
+
+
+# 7. Remove the taints on the master so that you can schedule pods on it.
+kubectl taint nodes --all node-role.kubernetes.io/master-
+# It should return the following.
+# node "<your-hostname>" untainted
+
+
+# 8. Confirm that you now have a node in your cluster with the following command.
+kubectl get nodes -o wide
+# It should return something like the following. node has the STATUS of Ready
+# NAME             STATUS  ROLES   AGE  VERSION  EXTERNAL-IP  OS-IMAGE            KERNEL-VERSION     CONTAINER-RUNTIME
+# <your-hostname>  Ready   master  1h   v1.8.x   <none>       Ubuntu 16.04.3 LTS  4.10.0-28-generic  docker://1.12.6
+
+# Congratulations! You now have a single-host Kubernetes cluster equipped with Calico.
+
+
+#-------  end Calico -------#
+
+
+
+# Note:
+# For Canal to work correctly, --pod-network-cidr=10.244.0.0/16 has to be passed to kubeadm init.
+# Canal works on amd64 only.
+# kubeadm init --pod-network-cidr=10.244.0.0/16
+# kubectl apply -f https://raw.githubusercontent.com/projectcalico/canal/master/k8s-install/1.7/rbac.yaml
+# kubectl apply -f https://raw.githubusercontent.com/projectcalico/canal/master/k8s-install/1.7/canal.yaml
+
+
+# Note:
+# For flannel to work correctly, --pod-network-cidr=10.244.0.0/16 has to be passed to kubeadm init.
+# flannel works on amd64, arm, arm64 and ppc64le, but for it to work on a platform other than amd64 you have to manually download the manifest and replace amd64 occurrences with your chosen platform.
+# Set /proc/sys/net/bridge/bridge-nf-call-iptables to 1 by running sysctl net.bridge.bridge-nf-call-iptables=1 to pass bridged IPv4 traffic to iptables’ chains. This is a requirement for some CNI plugins to work, for more information please see here.
+# kubeadm init --pod-network-cidr=10.244.0.0/16
+# kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/v0.9.1/Documentation/kube-flannel.yml
+
+#######  end DNS ########
+
+
+
+
+# 五、集群节点加入
+# You can now join any number of machines by running the following on each node
+# as root:
+# 
+# kubeadm join 192.168.1.6:6443 --token aniwqr.tqzegtwajfa56ymb --discovery-token-ca-cert-hash sha256:4247e84f9b24f021e83d058c97a1f1518a861a904512a2c93eb8effc44ba0072
+
+# 可使用命令：
+# kubeadm token create --print-join-command
+# 生成新的kubeadm join信息
+
+
+
+# 六、部署可选组件
+
+# 6.1 部署kubernetes-dashboard
+# IMPORTANT: Since version 1.7 Dashboard uses more secure setup. It means, that by default it has minimal set of privileges and can only be accessed over HTTPS. It is recommended to read Access Control guide before performing any further steps.
+# To deploy Dashboard, execute following command:
+
+# 方案a(官网github:https://github.com/kubernetes/dashboard 在线部署，且不修改文件):
+# kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
+# To access Dashboard from your local workstation you must create a secure channel to your Kubernetes cluster. Run the following command:
+# $ kubectl proxy
+# Now access Dashboard at:
+# http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/.
+
+# 方案b(离线部署，且修改文件):
+# 使用离线文件:kubernetes-dashboard.yaml，让外面访问，需要修改这个yaml文件端口类型为NodePort默认为clusterport外部访问不了，修改kubernetes-dashboard.yaml如下内容：
+# kind: Service
+# apiVersion: v1
+# metadata:
+#   labels:
+#     k8s-app: kubernetes-dashboard
+#   name: kubernetes-dashboard
+#   namespace: kube-system
+# spec:
+#   type: NodePort             #额外添加行
+#   ports:
+#     - port: 443
+#       targetPort: 8443
+#       nodePort: 32000         #额外添加行
+#   selector:
+#     k8s-app: kubernetes-dashboard
+
+kubectl create -f kubernetes-dashboard.yaml
+# 如果出现pod失败需要删除可使用以下命令
+# 
+# 删除pod
+# kuberctl delete po -n kube-system <pod-name>
+# 查看pod创建失败原因
+# kubectl describe pod kubernetes-dashboard-845747bdd4-8gtt2 --namespace=kube-system
+# 
+# 访问：https://master_ip:32666
+# 获取dashboard TOKEN 脚本命令
+# kubectl describe -n kube-system secret $(kubectl get secrets -n kube-system | grep kubernetes-dashboard-token | cut -f1 -d ' ') | grep -E '^token' | cut -f2 -d':' | tr -d " "
+
+
+# 6.2 （1.8版本后已经弃用，使用Kubernetes Metrics Server）部署k8s监控heapster(https://github.com/kubernetes/heapster)选influxdb+rbac方案
+
+
+
+# 七. 其他问题：
+# 7.1 服务器重启后系统自动启动kubelet服务失败，通过命令(journalctl -exu kubelet)查看到有如下报错信息：
+# error: failed to run Kubelet: Running with swap on is not supported, please disable swap! or set --fail-swap-on flag to false
+# 编辑kubelet的配置文件/etc/systemd/system/kubelet.service.d/10-kubeadm.conf 
+# 在KUBELET_CGROUP_ARGS配置参数末尾加上配置项--fail-swap-on=false
+# 重启服务后，发现kubelet自动跟随系统启动
+
+# ***注意***：正常的k8s集群中，不修改这部分原始数据应该是可以正常访问的。
+
+
+
+# 7.2 执行命令(或者是重启服务后)：kubectl get nodes
+# 响应如下信息：
+# The connection to the server localhost:8080 was refused - did you specify the right host or port?
+# 修改文件/etc/kubernetes/manifests/kube-apiserver.yaml： --insecure-port=0 为 --insecure-port=8080
+# 默认不开放http请求，改成8080后表示开放http的8080端口
+# 同时最好将--admission-control参数中的ServiceAccount时候删除
+# 修改成功后重启kubelet：
+# systemctl restart kubelet
+# 再次测试可得如下类似结果（成功）：
+# NAME          STATUS     ROLES     AGE       VERSION
+# centos.init   NotReady   master    3h        v1.10.0
+
+# ***注意***：正常的k8s集群中，不修改这部分原始数据应该是可以正常访问的。
+
+
+

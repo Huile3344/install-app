@@ -1,0 +1,158 @@
+<?xml version="1.0"?>
+<!DOCTYPE mycat:schema SYSTEM "schema.dtd">
+<mycat:schema xmlns:mycat="http://io.mycat/">
+	
+	<schema name="ERPUAA" checkSQLschema="false" sqlMaxLimit="100">
+		<table name="erp_company" primaryKey="id" autoIncrement="false" dataNode="dnUaa" />
+		<table name="erp_menu" primaryKey="id" autoIncrement="false" dataNode="dnUaa" />	
+		<table name="erp_permission" primaryKey="id" autoIncrement="false" dataNode="dnUaa" />
+		<table name="erp_platform" primaryKey="id" autoIncrement="false" dataNode="dnUaa" />
+		<table name="erp_role" primaryKey="id" autoIncrement="false" dataNode="dnUaa" />
+		<table name="erp_role_group"  primaryKey="id" autoIncrement="false" dataNode="dnUaa" />
+		<table name="erp_store" primaryKey="id" autoIncrement="false" dataNode="dnUaa" />
+		<table name="erp_user" primaryKey="id" autoIncrement="false" dataNode="dnUaa" />
+		<table name="erp_user_menu" primaryKey="id" autoIncrement="false" dataNode="dnUaa" />	
+		<table name="erp_user_role" primaryKey="id" autoIncrement="false" dataNode="dnUaa" />
+		<table name="erp_button" primaryKey="id" autoIncrement="false" dataNode="dnUaa" />
+		<table name="erp_group" primaryKey="id" autoIncrement="false" dataNode="dnUaa" />		
+		<table name="erp_group_permission" primaryKey="id" autoIncrement="false" dataNode="dnUaa" />
+	        <table name="erp_user_button" primaryKey="id" autoIncrement="false" dataNode="dnUaa" />
+		<table name="erp_user_store" primaryKey="id" autoIncrement="false" dataNode="dnUaa" />		
+
+	</schema>
+	
+	<schema name="ERPORDER" checkSQLschema="false" sqlMaxLimit="100">
+		<!-- auto sharding by id (long) -->
+		<!--
+		<table name="travelrecord" dataNode="dn1,dn2,dn3" rule="auto-sharding-long" />
+		-->
+		<!-- global table is auto cloned to all defined data nodes ,so can join
+			with any table whose sharding node is in the same data node -->
+		<!--
+		<table name="company" primaryKey="ID" type="global" dataNode="dn1,dn2,dn3" />
+		<table name="goods" primaryKey="ID" type="global" dataNode="dn1,dn2" />
+		-->
+		<!-- random sharding using mod sharind rule -->
+
+		<table name="erp_order_test" primaryKey="id" autoIncrement="false" dataNode="dn01,dn02,dn03,dn04,dn05,dn06,dn07,dn08,dn09,dn10,dn11,dn12,dn13,dn14,dn15,dn16"
+			   rule="erp-mod-long" />
+		<table name="erp_order" primaryKey="id" autoIncrement="false" dataNode="dn01,dn02,dn03,dn04,dn05,dn06,dn07,dn08,dn09,dn10,dn11,dn12,dn13,dn14,dn15,dn16"
+                           rule="erp-mod-long" />
+		<table name="erp_shipping_detail" primaryKey="id" autoIncrement="false" dataNode="dn01,dn02,dn03,dn04,dn05,dn06,dn07,dn08,dn09,dn10,dn11,dn12,dn13,dn14,dn15,dn16"
+                           rule="erp-mod-long" />
+
+		
+		<!-- <table name="dual" primaryKey="ID" dataNode="dnx,dnoracle2" type="global"
+			needAddLimit="false"/> <table name="worker" primaryKey="ID" dataNode="jdbc_dn1,jdbc_dn2,jdbc_dn3"
+			rule="mod-long" /> -->
+		<!--
+		<table name="employee" primaryKey="ID" dataNode="dn1,dn2"
+			   rule="sharding-by-intfile" />
+		<table name="customer" primaryKey="ID" dataNode="dn1,dn2"
+			   rule="sharding-by-intfile">
+			<childTable name="orders" primaryKey="ID" joinKey="customer_id"
+						parentKey="id">
+				<childTable name="order_items" joinKey="order_id"
+							parentKey="id" />
+			</childTable>
+			<childTable name="customer_addr" primaryKey="ID" joinKey="customer_id"
+						parentKey="id" />
+		</table>
+		-->
+		<!-- <table name="oc_call" primaryKey="ID" dataNode="dn1$0-743" rule="latest-month-calldate"
+			/> -->
+	</schema>
+	<!-- <dataNode name="dn1$0-743" dataHost="localhost1" database="db$0-743"
+		/> -->
+
+	<dataNode name="dnUaa" dataHost="server02" database="uaa" />	
+
+	<dataNode name="dn01" dataHost="server01" database="db1" />
+	<dataNode name="dn02" dataHost="server01" database="db2" />	
+	<dataNode name="dn03" dataHost="server01" database="db3" />
+	<dataNode name="dn04" dataHost="server01" database="db4" />
+
+	<dataNode name="dn05" dataHost="server02" database="db1" />
+        <dataNode name="dn06" dataHost="server02" database="db2" />
+        <dataNode name="dn07" dataHost="server02" database="db3" />
+        <dataNode name="dn08" dataHost="server02" database="db4" />
+	
+	<dataNode name="dn09" dataHost="server03" database="db1" />
+        <dataNode name="dn10" dataHost="server03" database="db2" />
+        <dataNode name="dn11" dataHost="server03" database="db3" />
+        <dataNode name="dn12" dataHost="server03" database="db4" />
+	
+	<dataNode name="dn13" dataHost="server04" database="db1" />
+        <dataNode name="dn14" dataHost="server04" database="db2" />
+        <dataNode name="dn15" dataHost="server04" database="db3" />
+        <dataNode name="dn16" dataHost="server04" database="db4" />
+
+	<dataHost name="server01" maxCon="1000" minCon="10" balance="1"
+			  writeType="0" dbType="mysql" dbDriver="native" switchType="1"  slaveThreshold="100">
+		<heartbeat>select user()</heartbeat>
+		<!-- can have multi write hosts -->
+		<writeHost host="hostM1" url="192.168.1.106:3301" user="root"
+				   password="654321">
+			<!-- can have multi read hosts -->
+			<readHost host="hostS1" url="192.168.1.106:3305" user="root" password="654321" />
+		</writeHost>
+	</dataHost>
+	
+	<dataHost name="server02" maxCon="1000" minCon="10" balance="1"
+                          writeType="0" dbType="mysql" dbDriver="native" switchType="1"  slaveThreshold="100">
+                <heartbeat>select user()</heartbeat>
+                <!-- can have multi write hosts -->
+                <writeHost host="hostM2" url="192.168.1.106:3302" user="root"
+                                   password="654321">
+                        <!-- can have multi read hosts -->
+                        <readHost host="hostS2" url="192.168.1.106:3306" user="root" password="654321" />
+                </writeHost>
+        </dataHost>
+	
+	<dataHost name="server03" maxCon="1000" minCon="10" balance="1"
+                          writeType="0" dbType="mysql" dbDriver="native" switchType="1"  slaveThreshold="100">
+                <heartbeat>select user()</heartbeat>
+                <!-- can have multi write hosts -->
+                <writeHost host="hostM3" url="192.168.1.106:3303" user="root"
+                                   password="654321">
+                        <!-- can have multi read hosts -->
+                        <readHost host="hostS3" url="192.168.1.106:3307" user="root" password="654321" />
+                </writeHost>
+        </dataHost>
+	
+	<dataHost name="server04" maxCon="1000" minCon="10" balance="1"
+                          writeType="0" dbType="mysql" dbDriver="native" switchType="1"  slaveThreshold="100">
+                <heartbeat>select user()</heartbeat>
+                <!-- can have multi write hosts -->
+                <writeHost host="hostM4" url="192.168.1.106:3304" user="root"
+                                   password="654321">
+                        <!-- can have multi read hosts -->
+                        <readHost host="hostS4" url="192.168.1.106:3308" user="root" password="654321" />
+                </writeHost>
+        </dataHost>
+
+
+	
+	<!--
+		<dataHost name="sequoiadb1" maxCon="1000" minCon="1" balance="0" dbType="sequoiadb" dbDriver="jdbc">
+		<heartbeat> 		</heartbeat>
+		 <writeHost host="hostM1" url="sequoiadb://1426587161.dbaas.sequoialab.net:11920/SAMPLE" user="jifeng" 	password="jifeng"></writeHost>
+		 </dataHost>
+
+	  <dataHost name="oracle1" maxCon="1000" minCon="1" balance="0" writeType="0" 	dbType="oracle" dbDriver="jdbc"> <heartbeat>select 1 from dual</heartbeat>
+		<connectionInitSql>alter session set nls_date_format='yyyy-mm-dd hh24:mi:ss'</connectionInitSql>
+		<writeHost host="hostM1" url="jdbc:oracle:thin:@127.0.0.1:1521:nange" user="base" 	password="123456" > </writeHost> </dataHost>
+
+		<dataHost name="jdbchost" maxCon="1000" 	minCon="1" balance="0" writeType="0" dbType="mongodb" dbDriver="jdbc">
+		<heartbeat>select 	user()</heartbeat>
+		<writeHost host="hostM" url="mongodb://192.168.0.99/test" user="admin" password="123456" ></writeHost> </dataHost>
+
+		<dataHost name="sparksql" maxCon="1000" minCon="1" balance="0" dbType="spark" dbDriver="jdbc">
+		<heartbeat> </heartbeat>
+		 <writeHost host="hostM1" url="jdbc:hive2://feng01:10000" user="jifeng" 	password="jifeng"></writeHost> </dataHost> -->
+
+	<!-- <dataHost name="jdbchost" maxCon="1000" minCon="10" balance="0" dbType="mysql"
+		dbDriver="jdbc"> <heartbeat>select user()</heartbeat> <writeHost host="hostM1"
+		url="jdbc:mysql://localhost:3306" user="root" password="123456"> </writeHost>
+		</dataHost> -->
+</mycat:schema>

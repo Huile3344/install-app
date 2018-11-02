@@ -1,0 +1,43 @@
+apiVersion: kubeadm.k8s.io/v1alpha2
+kind: MasterConfiguration
+kubernetesVersion: v1.11.2
+#apiServerCertSANs:
+#- 192.168.1.8
+#- 172.31.244.232
+#- 172.31.244.233
+#- 172.31.244.234
+#- master1
+#- master2
+#- master3
+#- node1
+#- 47.75.1.72
+
+etcd:
+  # 外部已运行 etcd 集群
+  external:
+    endpoints:
+      # 无证书方式
+      #- http://192.168.1.8:2379
+      # 有证书方式
+      - https://192.168.1.8:2379
+    # keyFile: null #脚本自动替换
+    # certFile: null #脚本自动替换
+    # caFile: null #脚本自动替换
+ 
+#api:
+#  advertiseAddress: 192.168.1.8
+#  controlPlaneEndpoint: 192.168.1.8:8443
+#  #controlPlaneEndpoint: 192.168.1.8:8080
+
+controllerManagerExtraArgs:
+  node-monitor-grace-period: 10s
+  pod-eviction-timeout: 10s
+  
+apiServerExtraArgs:
+  endpoint-reconciler-type: lease
+  
+networking:
+  podSubnet: <POD_SUBNET>
+  
+featureGates:
+   CoreDNS: true
