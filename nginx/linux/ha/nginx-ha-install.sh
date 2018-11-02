@@ -5,7 +5,7 @@ source /opt/shell/log.sh
 INSTALL_ROOT=$(readlink -f $(dirname "${BASH_SOURCE}"))
 note "INSTALLER_ROOT: $INSTALL_ROOT"
 
-echo_exec "source $INSTALL_ROOT/nginx.properties"
+echo_exec "source $INSTALL_ROOT/nginx-ha.properties"
 
 h1 "nginx安装"
 h2 "安装nginx前置环境"
@@ -13,29 +13,27 @@ h2 "安装nginx前置环境"
 echo_exec "yum -y install make zlib zlib-devel gcc-c++ libtool  openssl openssl-devel"
 echo_exec "yum -y install libnl libnl-devel libnl3 libnl3-devel libnfnetlink-devel"
 
-if ! pcre-config --version &> /dev/null; then
-	if [ ! -d pcre-${pcre_version} ]; then
-		if [ ! -e pcre-${pcre_version}.tar.gz ]; then
-			echo_exec "wget https://nchc.dl.sourceforge.net/project/pcre/pcre/${pcre_version}/pcre-${pcre_version}.tar.gz"
-			if [ 0 -ne $? ]; then
-				rm "-rf pcre-${pcre_version}.tar.gz"
-				error "download pcre failed!"
-				exit 1
-			fi
-		fi
-		echo_exec "tar xf pcre-${pcre_version}.tar.gz"
-	fi
-	echo_exec cd pcre-${pcre_version}
-	echo_exec ./configure
-	if [ 0 -ne $? ]; then
-		error "./configure of pcre failed!"
-		exit 1
-	fi
-	echo_exec "make && make install"
-	if [ 0 -ne $? ]; then
-		error "make && make install of pcre failed!"
-		exit 1
-	fi
+if [ ! -d pcre-${pcre_version} ]; then
+    if [ ! -e pcre-${pcre_version}.tar.gz ]; then
+        echo_exec "wget https://nchc.dl.sourceforge.net/project/pcre/pcre/${pcre_version}/pcre-${pcre_version}.tar.gz"
+        if [ 0 -ne $? ]; then
+            rm "-rf pcre-${pcre_version}.tar.gz"
+            error "download pcre failed!"
+            exit 1
+        fi
+    fi
+    echo_exec "tar xf pcre-${pcre_version}.tar.gz"
+fi
+echo_exec cd pcre-${pcre_version}
+echo_exec ./configure
+if [ 0 -ne $? ]; then
+    error "./configure of pcre failed!"
+    exit 1
+fi
+echo_exec "make && make install"
+if [ 0 -ne $? ]; then
+    error "make && make install of pcre failed!"
+    exit 1
 fi
 echo_exec "pcre-config --version"
 echo_exec "cd $INSTALL_ROOT"
@@ -82,7 +80,10 @@ if [ 0 -ne $? ]; then
 	exit 1
 fi
 echo_exec "ln -sf ${ngx_configure_prefix}/sbin/nginx /usr/sbin/nginx"
+echo_exec "mkdir -pv /data/nginx/cache/proxy_cache/tmp"
+echo_exec "cp $INSTALL_ROOT/nginx.conf ${ngx_configure_prefix}/conf/nginx.conf"
 echo_exec "nginx -v"
+echo_exec "nginx"
 echo_exec "cd $INSTALL_ROOT"
 
 
@@ -100,7 +101,7 @@ if [ ! -d keepalived-${keepalived_version} ]; then
 	echo_exec "tar xf keepalived-${keepalived_version}.tar.gz"
 fi
 echo_exec "cd keepalived-${keepalived_version}"
-kpd_configure_prefix=${ngx_configure_prefix-$INSTALL_ROOT/keepalived}
+kpd_configure_prefix=${kpd_configure_prefix-$INSTALL_ROOT/keepalived}
 echo_exec "./configure --prefix=$INSTALL_ROOT/keepalived"
 if [ 0 -ne $? ]; then
 	error "./configure of keepalived failed!"
@@ -111,12 +112,13 @@ if [ 0 -ne $? ]; then
 	error "make && make install of keepalived failed!"
 	exit 1
 fi
-echo_exec "ln -sf ${kpd_configure_prefix}/sbin/nginx /usr/sbin/keepalived"
+echo_exec "ln -sf ${kpd_configure_prefix}/sbin/keepalived /usr/sbin/keepalived"
 echo_exec "keepalived -v"
 
 echo_exec "mkdir -pv /etc/keepalived"
 echo_exec "cp $INSTALL_ROOT/keepalived.conf $INSTALL_ROOT/nginx_check.sh /etc/keepalived"
 echo_exec "/opt/shell/purge-win-shell.sh /etc/keepalived/nginx_check.sh"
+echo_exec "keepalived -D"
 
 success $"----nginx-ha has been installed and started successfully.----
 

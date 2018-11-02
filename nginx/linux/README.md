@@ -1,13 +1,15 @@
 # nginx 安装
 
-## 方案一：脚本安装
+## 方案A：脚本安装
 
-- 1、修改nginx.properties 指定版本
+### 一、修改nginx.conf
 
-- 2、执行nginx-install.sh安装 nginx
+### 二、修改nginx.properties 指定版本
+
+### 三、执行nginx-install.sh安装 nginx
 
 
-## 方案二：手动安装
+## 方案B：手动安装
 
 - 创建nginx主目录
 
@@ -99,6 +101,10 @@
 - 7、修改 nginx.conf
 
 nginx启动默认使用安装目录/opt/nginx/nginx下的conf目录下的nginx.conf
+
+或者使用 /opt/nginx/nginx/sbin/nginx
+    
+    cp /opt/nginx/nginx.conf /opt/nginx/nginx/conf/nginx.conf
 
 然后执行运行
       

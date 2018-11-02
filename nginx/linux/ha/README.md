@@ -1,14 +1,15 @@
 # nginx-ha 安装
 
 ## 方案A：脚本安装
+
 - 执行/opt/shell/purge-win-shell.sh filename
 剔除从 windows 拷贝到 linux 的脚本文件换行符多余的 ^M 字符
 
-### 一、修改nginx-ha.properties 指定版本
+### 一、 修改 nginx.conf 和 keepalived.conf 文件后
 
-### 二、执行nginx-ha-install.sh安装nginx
+### 二、修改nginx-ha.properties 指定版本
 
-### 三、 修改完 nginx.conf 和 keepalived.conf 文件后，启动 nginx 和 keepalived
+### 三、执行nginx-ha-install.sh安装nginx
 
 启动keepalived
       

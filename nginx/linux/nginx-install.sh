@@ -12,30 +12,30 @@ h2 "安装nginx前置环境"
 
 echo_exec "yum -y install make zlib zlib-devel gcc-c++ libtool  openssl openssl-devel"
 
-if ! pcre-config --version &> /dev/null; then
-	if [ ! -d pcre-${pcre_version} ]; then
-		if [ ! -e pcre-${pcre_version}.tar.gz ]; then
-			echo_exec "wget https://nchc.dl.sourceforge.net/project/pcre/pcre/${pcre_version}/pcre-${pcre_version}.tar.gz"
-			if [ 0 -ne $? ]; then
-				rm "-rf pcre-${pcre_version}.tar.gz"
-				error "download pcre failed!"
-				exit 1
-			fi
-		fi
-		echo_exec "tar xf pcre-${pcre_version}.tar.gz"
-	fi
-	echo_exec cd pcre-${pcre_version}
-	echo_exec ./configure
-	if [ 0 -ne $? ]; then
-		error "./configure of pcre failed!"
-		exit 1
-	fi
-	echo_exec "make && make install"
-	if [ 0 -ne $? ]; then
-		error "make && make install of pcre failed!"
-		exit 1
-	fi
+#if ! pcre-config --version &> /dev/null; then
+if [ ! -d pcre-${pcre_version} ]; then
+    if [ ! -e pcre-${pcre_version}.tar.gz ]; then
+        echo_exec "wget https://nchc.dl.sourceforge.net/project/pcre/pcre/${pcre_version}/pcre-${pcre_version}.tar.gz"
+        if [ 0 -ne $? ]; then
+            rm "-rf pcre-${pcre_version}.tar.gz"
+            error "download pcre failed!"
+            exit 1
+        fi
+    fi
+    echo_exec "tar xf pcre-${pcre_version}.tar.gz"
 fi
+echo_exec cd pcre-${pcre_version}
+echo_exec ./configure
+if [ 0 -ne $? ]; then
+    error "./configure of pcre failed!"
+    exit 1
+fi
+echo_exec "make && make install"
+if [ 0 -ne $? ]; then
+    error "make && make install of pcre failed!"
+    exit 1
+fi
+#fi
 echo_exec "pcre-config --version"
 echo_exec "cd $INSTALL_ROOT"
 
@@ -81,7 +81,10 @@ if [ 0 -ne $? ]; then
 	exit 1
 fi
 echo_exec "ln -sf ${ngx_configure_prefix}/sbin/nginx /usr/sbin/nginx"
+echo_exec "mkdir -pv /data/nginx/cache/proxy_cache/tmp"
+echo_exec "cp $INSTALL_ROOT/nginx.conf ${ngx_configure_prefix}/conf/nginx.conf"
 echo_exec "nginx -v"
+echo_exec "nginx"
 
 success $"----nginx has been installed and started successfully.----
 
