@@ -22,3 +22,5 @@ slow-query-log=1
 slow-query-log-file=/var/lib/mysql/slow-queries.log
 long_query_time=3
 log-queries-not-using-indexes
+# 忽略表名大小写
+lower_case_table_names=1
