@@ -1,26 +1,36 @@
-1.À­È¡¾µÏñdocker pull rabbitmq:3.6.16-management;
-2.´´½¨ÍøÂçdocker network create rabbitmq-net; 
-3.Æô¶¯Èı¸öÈİÆ÷£º¶Ë¿Ú·Ö±ğÎª 5672/15672--5674/15674
+1.æ‹‰å–é•œåƒdocker pull rabbitmq:3.6.16-management;
+2.åˆ›å»ºç½‘ç»œdocker network create rabbitmq-net;
+3.å¯åŠ¨ä¸‰ä¸ªå®¹å™¨ï¼šç«¯å£åˆ†åˆ«ä¸º 5672/15672--5674/15674
 docker run -d \
 -p 5672:5672 \					#5673:5672    5674:5672
 -p 15672:15672 \				#15673:15672    15674:15672
 -e RABBITMQ_NODENAME=rabbitmq1 \	#rabbitmq2  rabbitmq3
--e RABBITMQ_ERLANG_COOKIE='SELLERPROERP' \
+-e RABBITMQ_ERLANG_COOKIE='mfp' \
 -h rabbitmq1 \      #rabbitmq2  rabbitmq3
 --name=rabbitmq1 \		#rabbitmq2  rabbitmq3
 --net=rabbitmq-net \
 rabbitmq:3.6.16-management
 
-4.·Ö±ğ½øÈëµÚ¶ş¸ö¼°µÚÈı¸öÈİÆ÷Ö´ĞĞ
+4.åˆ†åˆ«è¿›å…¥ç¬¬äºŒä¸ªåŠç¬¬ä¸‰ä¸ªå®¹å™¨æ‰§è¡Œ
 root@rabbitmq2:/# rabbitmqctl -n rabbitmq2@rabbitmq2 -q stop_app
-root@rabbitmq2:/# rabbitmqctl -n rabbitmq2@rabbitmq2 -q reset   
+root@rabbitmq2:/# rabbitmqctl -n rabbitmq2@rabbitmq2 -q reset
 root@rabbitmq2:/# rabbitmqctl -n rabbitmq2@rabbitmq2 -q join_cluster rabbitmq1@rabbitmq1
 root@rabbitmq2:/# rabbitmqctl -n rabbitmq2@rabbitmq2 -q start_app
+æˆ–è€…
+# docker exec -it rabbitmq2 bash -c "\
+    rabbitmqctl stop_app;\
+    rabbitmqctl reset;rabbitmqctl join_cluster rabbitmq1@rabbitmq1;\
+    rabbitmqctl start_app"
 
 root@rabbitmq3:/# rabbitmqctl -n rabbitmq3@rabbitmq3 -q stop_app
-root@rabbitmq3:/# rabbitmqctl -n rabbitmq3@rabbitmq3 -q reset   
-root@rabbitmq3:/# rabbitmqctl -n rabbitmq3@rabbitmq3 -q join_cluster rabbitmq1@rabbitmq1 --ram    #ÕâÀïµÚÈı¸ö½ÚµãÉèÖÃÎªÄÚ´æ½Úµã
+root@rabbitmq3:/# rabbitmqctl -n rabbitmq3@rabbitmq3 -q reset
+root@rabbitmq3:/# rabbitmqctl -n rabbitmq3@rabbitmq3 -q join_cluster rabbitmq1@rabbitmq1 --ram    #è¿™é‡Œç¬¬ä¸‰ä¸ªèŠ‚ç‚¹è®¾ç½®ä¸ºå†…å­˜èŠ‚ç‚¹
 root@rabbitmq3:/# rabbitmqctl -n rabbitmq3@rabbitmq3 -q start_app
+æˆ–è€…
+# docker exec -it rabbitmq2 bash -c "\
+    rabbitmqctl stop_app;\
+    rabbitmqctl reset;rabbitmqctl join_cluster rabbitmq1@rabbitmq1 --ram;\
+    rabbitmqctl start_app"
 
-5.Íê³É¼¯Èº£¬²é¿´×´Ì¬£»
-http://server02:15672/      ÓÃ»§Ãûguest£¬ÃÜÂëguest
+5.å®Œæˆé›†ç¾¤ï¼ŒæŸ¥çœ‹çŠ¶æ€ï¼›
+http://server02:15672/      ç”¨æˆ·åguestï¼Œå¯†ç guest
