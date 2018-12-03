@@ -5,6 +5,7 @@ source /opt/shell/log.sh
 START_PORT=30001
 NODES=6
 REPLICAS=1
+HOST_IP="192.168.1.8"
 
 if [ -a config.sh ]
 then
@@ -22,31 +23,34 @@ then
 
     HOSTS=""
     for PORT in `seq ${START_PORT} $((START_PORT+NODES-1))`; do
-      echo_exec "mkdir -pv /data/redis-cluster/${PORT}/{conf,data}"
-      echo_exec "cp redis.conf /data/redis-cluster/${PORT}/conf"
-    #  cat <<EOF >  /data/redis-cluster/${PORT}/conf/redis.conf
-    #      port 6379
-    #      cluster-enabled yes
-    #      cluster-config-file nodes.conf
-    #      cluster-node-timeout 5000
-    #      cluster-announce-port 6379
-    #      cluster-announce-bus-port 16379
-    #      appendonly yes
-    #  EOF
+        echo_exec "mkdir -pv /data/redis-cluster/${PORT}/{conf,data}"
+        #echo_exec "cp redis.conf /data/redis-cluster/${PORT}/conf"
 
-      bus_port=$((${PORT}+10000))
-      echo_exec "docker run -d -p ${PORT}:6379 -p ${bus_port}:16379 \
-      -v /data/redis-cluster/${PORT}/conf/redis.conf:/etc/redis/redis.conf \
-      -v /data/redis-cluster/${PORT}/data:/data \
-      --restart always --name redis-${PORT} --net redis-net \
-      --sysctl net.core.somaxconn=1024 redis:${REDIS_VERSION} redis-server /etc/redis/redis.conf"
+        bus_port=$((${PORT}+10000))
+        cat <<EOF >  /data/redis-cluster/${PORT}/conf/redis.conf
+port $PORT
+cluster-enabled yes
+cluster-config-file nodes.conf
+cluster-node-timeout 5000
+# 此处很重要，需填写主机IP，否则使用docker内部网络，外部无法访问
+cluster-announce-ip $HOST_IP
+cluster-announce-port $PORT
+cluster-announce-bus-port $bus_port
+appendonly yes
+EOF
+
+        echo_exec "docker run -d -p ${PORT}:${PORT} -p ${bus_port}:${bus_port} \
+        -v /data/redis-cluster/${PORT}/conf/redis.conf:/etc/redis/redis.conf \
+        -v /data/redis-cluster/${PORT}/data:/data \
+        --restart always --name redis-${PORT} --net redis-net \
+        --sysctl net.core.somaxconn=1024 redis:${REDIS_VERSION} redis-server /etc/redis/redis.conf"
 
       # 目前发现不支持DNS方式的Redis集群创建，会报IP解析异常
       # HOSTS="$HOSTS redis-${PORT}:6379"
 
       # 使用IP方式的Redis集群创建
       NODE_IP=$(docker inspect --format '{{ (index .NetworkSettings.Networks "redis-net").IPAddress }}' "redis-${PORT}")
-      HOSTS="$HOSTS ${NODE_IP}:6379"
+      HOSTS="$HOSTS ${NODE_IP}:${PORT}"
 
     done
 
@@ -94,7 +98,7 @@ then
     while [ 1 ]; do
         clear
         date
-        echo_exec "docker exec -it redis-${START_PORT} redis-cli cluster nodes | head -30"
+        echo_exec "docker exec -it redis-${START_PORT} redis-cli -p ${START_PORT} cluster nodes | head -30"
         sleep 1
     done
     exit 0
