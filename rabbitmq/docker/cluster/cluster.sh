@@ -98,7 +98,7 @@ then
 #    while [ 1 ]; do
         clear
         date
-        echo_exec "docker exec -it rabbitmq0 rabbitmqctl status"
+        echo_exec "docker exec -it rabbitmq0 rabbitmqctl cluster_status"
         sleep 1
 #    done
     exit 0
