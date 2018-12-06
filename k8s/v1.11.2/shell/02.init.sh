@@ -109,4 +109,8 @@ echo -e "\n******** step $step 添加 iptables 规则，使 calico node 中的po
 # calico node 加上该段之后，pod可访问外部网络了，如：ping www.baidu.com
 echo_exec iptables -t nat -I POSTROUTING -s $POD_SUBNET -j MASQUERADE
 
+info "Enable forwarding from Docker containers to the outside world"
+echo_exec "sysctl net.ipv4.conf.all.forwarding=1"
+echo_exec "iptables -P FORWARD ACCEPT"
+
 echo "init success"
