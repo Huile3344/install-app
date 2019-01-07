@@ -12,7 +12,7 @@ then
     source "config.sh"
 fi
 
-if [ "$1" == "start" ]
+if [ "$1" == "create" ]
 then
     # 拉取 redis 镜像
     REDIS_VERSION=5
@@ -23,8 +23,8 @@ then
 
     HOSTS=""
     for PORT in `seq ${START_PORT} $((START_PORT+NODES-1))`; do
-        echo_exec "mkdir -pv /data/redis-cluster/${PORT}/{conf,data}"
-        #echo_exec "cp redis.conf /data/redis-cluster/${PORT}/conf"
+      echo_exec "mkdir -pv /data/redis-cluster/${PORT}/{conf,data}"
+    #  echo_exec "cp redis.conf /data/redis-cluster/${PORT}/conf"
 
         bus_port=$((${PORT}+10000))
         cat <<EOF >  /data/redis-cluster/${PORT}/conf/redis.conf
@@ -60,7 +60,7 @@ EOF
     exit 0
 fi
 
-if [ "$1" == "create" ]
+if [ "$1" == "create-cluster" ]
 then
     HOSTS=""
     for PORT in `seq ${START_PORT} $((START_PORT+NODES-1))`; do
@@ -68,6 +68,15 @@ then
         HOSTS="$HOSTS ${NODE_IP}:6379"
     done
     echo_exec "docker exec -it redis-${START_PORT} redis-cli --cluster create $HOSTS --cluster-replicas $REPLICAS"
+    exit 0
+fi
+
+if [ "$1" == "start" ]
+then
+    for PORT in `seq ${START_PORT} $((START_PORT+NODES-1))`; do
+        info "Starting redis-${PORT}"
+        echo_exec "docker start redis-${PORT}"
+    done
     exit 0
 fi
 
@@ -145,8 +154,9 @@ then
 fi
 
 echo "Usage: $0 [start|create|stop|watch|tail|clean]"
-echo "start       -- Launch Redis Cluster instances."
-echo "create      -- Create a cluster using redis-cli --cluster create."
+echo "create              -- Create and Launch Redis Cluster instances."
+echo "create-cluster      -- Create a cluster using redis-cli --cluster create."
+echo "start               -- Start Redis Cluster instances."
 echo "stop        -- Stop Redis Cluster instances."
 echo "watch       -- Show CLUSTER NODES output (first 30 lines) of first node."
 echo "tail <id>   -- Run tail -f of instance at base port + ID."

@@ -10,7 +10,7 @@ then
     source "config.sh"
 fi
 
-if [ "$1" == "start" ]
+if [ "$1" == "create" ]
 then
     # 拉取 rabbitmq 镜像
     RABBITMQ_VERSION=3.6-management
@@ -71,6 +71,15 @@ then
     exit 0
 fi
 
+if [ "$1" == "start" ]
+then
+    for SEQ in `seq 0 $((NODES-1))`; do
+        info "Starting rabbitmq${SEQ}"
+        echo_exec "docker start rabbitmq${SEQ}"
+    done
+    exit 0
+fi
+
 if [ "$1" == "stop" ]
 then
     for SEQ in `seq 0 $((NODES-1))`; do
@@ -93,14 +102,23 @@ then
     exit 0
 fi
 
+if [ "$1" == "status" ]
+then
+	clear
+	date
+	echo_exec "docker exec -it rabbitmq0 rabbitmqctl cluster_status"
+	sleep 1
+    exit 0
+fi
+
 if [ "$1" == "watch" ]
 then
-#    while [ 1 ]; do
+    while [ 1 ]; do
         clear
         date
         echo_exec "docker exec -it rabbitmq0 rabbitmqctl cluster_status"
         sleep 1
-#    done
+    done
     exit 0
 fi
 
@@ -139,9 +157,11 @@ then
 fi
 
 echo "Usage: $0 [start|stop|watch|tail|clean]"
-echo "start       -- Create and Launch RabbitMQ Cluster instances."
-echo "stop        -- Stop RabbitMQ Cluster instances."
-echo "watch       -- Show CLUSTER NODES output (first 30 lines) of first node."
-echo "tail <id>   -- Run tail -f of instance at base port + ID."
-echo "clean       -- Remove all instances data, logs, configs."
-echo "clean-logs  -- Remove just instances logs."
+echo "create       -- Create and Launch RabbitMQ Cluster instances."
+echo "start        -- Launch RabbitMQ Cluster instances."
+echo "stop         -- Stop RabbitMQ Cluster instances."
+echo "status       -- Show CLUSTER STATUS of first node."
+echo "watch        -- WATCH CLUSTER STATUS of first node."
+echo "tail <id>    -- Run tail -f of instance at base port + ID."
+echo "clean        -- Remove all instances data, logs, configs."
+echo "clean-logs   -- Remove just instances logs."
