@@ -1,0 +1,40 @@
+version: '3.1'
+
+networks:
+  esnet:
+
+services:
+  elasticsearch:
+    image: elasticsearch:6.6.0
+    environment:
+      - cluster.name=docker-cluster
+#      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - discovery.zen.ping.unicast.hosts=elasticsearch
+      - http.cors.enabled=true
+      - http.cors.allow-origin=*
+    deploy:
+      mode: replicated
+      replicas: 1
+      resources:
+        limits:
+          memory: 1g
+    volumes:
+      - /data/es/data:/usr/share/elasticsearch/data
+      - /data/es/logs:/usr/share/elasticsearch/logs
+      - /opt/es/ik:/usr/share/elasticsearch/plugins/ik
+    ports:
+      - 9200:9200
+    networks:
+      - esnet
+  kibana:
+    image: kibana:6.6.0
+    environment:
+      - SERVER_NAME=kibana
+#      - "ELASTICSEARCH_HOSTS=http://elasticsearch:9200"
+    ports:
+      - 5601:5601
+    networks:
+      - esnet
+    depends_on:
+      - elasticsearch
