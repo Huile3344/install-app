@@ -88,7 +88,6 @@ docker run -d --restart always -u root -p 8080:8080 -p 50000:50000 \
 	-v /usr/lib64/libpcre.so.1:/usr/lib/x86_64-linux-gnu/libpcre.so.1 \
     -v $(which git):/usr/bin/git \
 	-v /opt/jdk/jdk1.8.0_201:/docker-java-home \
-	-v /opt/jdk/jdk1.8.0_201/bin/java:/usr/bin/java \
 	-v /opt/m2:/opt/m2 \
     -v ~/.ssh:/var/jenkins_home/.ssh \
 	--name=jenkins jenkins/jenkins:lts
