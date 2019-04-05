@@ -8,7 +8,7 @@ if [ 0 -ne $? ]; then
 	tar -zxf jdk-8u171-linux-x64.tar.gz -C /opt/jdk
 	echo "export JAVA_HOME=/opt/jdk/jdk1.8.0_171" >> /etc/profile
 	echo "export JRE_HOME=/opt/jdk/jdk1.8.0_171/jre" >> /etc/profile
-	echo "export PATH=$JAVA_HOME/bin:$JRE_HOME/bin:$PATH" >> /etc/profile
+	echo "export PATH=\$JAVA_HOME/bin:\$JRE_HOME/bin:\$PATH" >> /etc/profile
 	source /etc/profile
 fi
 java -version
@@ -17,16 +17,15 @@ java -version
 mvn -v > /dev/null
 if [ 0 -ne $? ]; then
 	echo "开始安装 maven"
-	mkdir -pv /opt/maven
 	mkdir -pv /opt/m2/repository
 	m2_version=3.6.0
 	#wget http://ftp.cuhk.edu.hk/pub/packages/apache.org/maven/maven-3/${m2_version}/binaries/apache-maven-${m2_version}-bin.tar.gz
-	tar -zxf apache-maven-${m2_version}-bin.tar.gz -C /opt/maven
-	mv /opt/maven/apache-maven-${m2_version}/conf/settings.xml /opt/maven/apache-maven-${m2_version}/conf/settings.xml.bak
-	cp settings.xml /opt/maven/apache-maven-${m2_version}/conf/
-	ln -s /opt/maven/apache-maven-${m2_version}/conf/settings.xml /opt/m2/
+	tar -zxf apache-maven-${m2_version}-bin.tar.gz -C /opt/m2
+	mv /opt/m2/apache-maven-${m2_version}/conf/settings.xml /opt/m2/apache-maven-${m2_version}/conf/settings.xml.bak
+	cp settings.xml /opt/m2/apache-maven-${m2_version}/conf/
+	ln -s /opt/m2/apache-maven-${m2_version}/conf/settings.xml /opt/m2/
 	echo "export M2_HOME=/opt/maven/apache-maven-${m2_version}" >> /etc/profile
-	echo "export PATH=\${M2_HOME}/bin:\${PATH}" >> /etc/profile
+	echo "export PATH=\$M2_HOME/bin:\$PATH" >> /etc/profile
 	source /etc/profile
 fi
 mvn -v
@@ -70,7 +69,7 @@ yum install -y jenkins-2.150.1-1.1.noarch.rpm
 # 下面添加如下内容
 #jenkins ALL=(ALL)       NOPASSWD:ALL
 
-mkdir -pv /opt/jenkins/{conf,jenkins_home,project/dockerfiles}
+mkdir -pv /opt/jenkins/jenkins_home
 # 备份配置文件
 cp /etc/sysconfig/jenkins /opt/jenkins/conf/jenkins.bak
 cp jenkins /etc/sysconfig/jenkins
@@ -85,10 +84,9 @@ systemctl enable jenkins
 # 安装推荐插件，并额外安装插件Maven Integration plugin，用于构建maven项目,系统管理->插件管理->Avaiable->右上角搜索Maven Integration->Download now and install after restart
 # 安装完成后，选择重启jenkins
 
-# 将本地maven仓库的数据复制到/opt/m2/repository
+# 将maven仓库的数据复制到/opt/m2/repository
 if [ -e repository.zip ]; then
-	cp repository.zip /opt/m2/
-	unzip repository.zip
+	unzip repository.zip -d /opt/m2/
 	chown -R jenkins /opt/m2
 fi
 
