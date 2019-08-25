@@ -1,0 +1,112 @@
+version: "3"
+
+services:
+  elasticsearch:
+    image: elasticsearch:7.3.1
+    environment:
+      ES_JAVA_OPTS: '-Xms512m -Xmx512m'
+      xpack.security.enabled: 'false'
+      xpack.monitoring.enabled: 'false'
+      xpack.graph.enabled: 'false'
+      xpack.watcher.enabled: 'false'
+#      discovery.zen.ping.unicast.hosts: elasticsearch
+      http.cors.enabled: 'true'
+      http.cors.allow-origin: '*'
+      cluster.name: elk-cluster
+    volumes:
+      - /opt/elk/elasticsearch/data:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    networks:
+      - elk-net
+    deploy:
+      mode: replicated
+      replicas: 1
+      resources:
+        limits:
+          memory: 1g
+      placement:
+        constraints:
+          - node.labels.elasticsearch == 1
+
+  kibana:
+    image: kibana:7.3.1
+    environment:
+      ELASTICSEARCH_URL: 'http://elasticsearch:9200'
+      XPACK_SECURITY_ENABLED: 'false'
+      XPACK_MONITORING_ENABLED: 'false'
+      cluster.name: elk-cluster
+    ports:
+      - 5601:5601
+    networks:
+      - elk-net
+    depends_on:
+      - elasticsearch
+
+  logstash:
+    image: logstash:7.3.1
+    volumes:
+#    - /opt/elk/logstash/config/:/usr/share/logstash/config/
+    - /opt/elk/logstash/pipeline/:/usr/share/logstash/pipeline/
+#    - /opt/elk/build:/opt/build
+    environment:
+      cluster.name: elk-cluster
+    ports:
+      - "5000:5000"
+    networks:
+      - elk-net
+    depends_on:
+      - elasticsearch
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.labels.logstash == 1
+
+#  logspout:
+#    image: bekt/logspout-logstash
+#    environment:
+#      ROUTE_URIS: 'logstash+tcp://10.0.10.25:5001'
+#    volumes:
+#      - /var/run/docker.sock:/var/run/docker.sock
+#    networks:
+#      - elk-net
+#    depends_on:
+#      - logstash
+#    deploy:
+#      mode: global
+#      restart_policy:
+#        condition: on-failure
+#        delay: 30s
+
+  logspout:
+    image: bekt/logspout-logstash
+    environment:
+#      ROUTE_URIS: 'logstash+tcp://logstash:5000'
+#      ROUTE_URIS: 'logstash+udp://logstash:5000'
+      ROUTE_URIS: 'logstash://logstash:5000'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - elk-net
+    depends_on:
+      - logstash
+    deploy:
+      mode: global
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+
+  grafana:
+    image: grafana/grafana:latest
+    volumes:
+      - /opt/elk/grafana/data:/var/lib/grafana
+    environment:
+      cluster.name: elk-cluster
+    ports:
+      - 3000:3000
+    networks:
+      - elk-net
+
+networks:
+  elk-net:
