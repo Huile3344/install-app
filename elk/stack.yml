@@ -4,15 +4,25 @@ services:
   elasticsearch:
     image: elasticsearch:7.3.1
     environment:
-      ES_JAVA_OPTS: '-Xms512m -Xmx512m'
-      xpack.security.enabled: 'false'
-      xpack.monitoring.enabled: 'false'
-      xpack.graph.enabled: 'false'
-      xpack.watcher.enabled: 'false'
-#      discovery.zen.ping.unicast.hosts: elasticsearch
-      http.cors.enabled: 'true'
-      http.cors.allow-origin: '*'
-      cluster.name: elk-cluster
+      - 'ES_JAVA_OPTS=-Xms512m -Xmx512m'
+      - xpack.security.enabled=false
+      - xpack.monitoring.enabled=false
+      - xpack.graph.enabled=false
+      - xpack.watcher.enabled=false
+      #- bootstrap.memory_lock=true
+      # 测试开发时开启此配置，避免磁盘告警导致无法启动
+      - cluster.routing.allocation.disk.threshold_enabled=false
+      # 集群名称
+      - cluster.name=elk-cluster
+      # 节点名称
+      - node.name=elasticsearch
+      # cluster.initial_master_nodes 和 discovery.zen.ping.unicast.hosts 二选一
+      # 初始主节点，多个节点以英文逗号分隔
+      - cluster.initial_master_nodes=elasticsearch
+      #- discovery.zen.ping.unicast.hosts=elasticsearch
+      # 开启http访问
+      - http.cors.enabled=true
+      - http.cors.allow-origin=*
     volumes:
       - /opt/elk/elasticsearch/data:/usr/share/elasticsearch/data
     ports:
@@ -22,9 +32,9 @@ services:
     deploy:
       mode: replicated
       replicas: 1
-      resources:
-        limits:
-          memory: 1g
+#      resources:
+#        limits:
+#          memory: 1g
       placement:
         constraints:
           - node.labels.elasticsearch == 1
@@ -32,10 +42,10 @@ services:
   kibana:
     image: kibana:7.3.1
     environment:
-      ELASTICSEARCH_URL: 'http://elasticsearch:9200'
-      XPACK_SECURITY_ENABLED: 'false'
-      XPACK_MONITORING_ENABLED: 'false'
-      cluster.name: elk-cluster
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - XPACK_SECURITY_ENABLED=false
+      - XPACK_MONITORING_ENABLED=false
+      - cluster.name=elk-cluster
     ports:
       - 5601:5601
     networks:
@@ -50,7 +60,7 @@ services:
     - /opt/elk/logstash/pipeline/:/usr/share/logstash/pipeline/
 #    - /opt/elk/build:/opt/build
     environment:
-      cluster.name: elk-cluster
+      - cluster.name=elk-cluster
     ports:
       - "5000:5000"
     networks:
@@ -66,7 +76,7 @@ services:
 #  logspout:
 #    image: bekt/logspout-logstash
 #    environment:
-#      ROUTE_URIS: 'logstash+tcp://10.0.10.25:5001'
+#      ROUTE_URIS=logstash+tcp://10.0.10.25:5001'
 #    volumes:
 #      - /var/run/docker.sock:/var/run/docker.sock
 #    networks:
@@ -82,9 +92,9 @@ services:
   logspout:
     image: bekt/logspout-logstash
     environment:
-#      ROUTE_URIS: 'logstash+tcp://logstash:5000'
-#      ROUTE_URIS: 'logstash+udp://logstash:5000'
-      ROUTE_URIS: 'logstash://logstash:5000'
+#      ROUTE_URIS=logstash+tcp://logstash:5000
+#      ROUTE_URIS=logstash+udp://logstash:5000
+      - ROUTE_URIS=logstash://logstash:5000
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
@@ -102,7 +112,7 @@ services:
     volumes:
       - /opt/elk/grafana/data:/var/lib/grafana
     environment:
-      cluster.name: elk-cluster
+      - cluster.name=elk-cluster
     ports:
       - 3000:3000
     networks:

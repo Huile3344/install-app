@@ -5,6 +5,17 @@
 - 使用ELK处理Docker日志 https://segmentfault.com/a/1190000009102612
 - docker部署ELK、grafana、zabbix https://blog.51cto.com/zhanghy/2300633
 
+## MAC
+
+- 修改 docker 使用的内存大小，改为4G以上，不然容器很容易运行一段时间后挂掉，并出现以下报错内容：
+
+      Native controller process has stopped - no new native processes can be started
+
+- 调整内核内容，运行以下脚本：
+
+      screen ~/Library/Containers/com.docker.docker/Data/vms/0/tty
+      sysctl -w vm.max_map_count=655360
+
 ## docker 方式配置
 
 - ELK 镜像拉取方式

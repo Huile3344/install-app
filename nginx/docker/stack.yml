@@ -1,0 +1,13 @@
+version: "3"
+
+services:
+  nginx:
+    image: nginx
+    ports:
+      - 80:80
+    volumes:
+      - /opt/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - /opt/nginx/html:/usr/share/nginx/html
+      - /opt/nginx/logs:/var/log/nginx
+    deploy:
+      replicas: 1

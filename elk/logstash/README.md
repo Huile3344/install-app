@@ -10,9 +10,9 @@ Logstash有两种类型的配置文件：管道配置文件，用于定义Logsta
 
 在定义Logstash处理管道的各个阶段时，可以创建管道配置文件。在deb和rpm上，将管道配置文件放在/etc/logstash/conf.d目录中。在docker中，管道配置文件放在/usr/share/logstash/pipeline/目录中。 Logstash尝试仅加载目录中具有.conf扩展名的文件，并忽略所有其他文件。
 
-### 配置文件
+### 服务配置文件
 
-配置文件已在Logstash安装中定义。在docker中，配置文件放在/usr/share/logstash/config/目录中。Logstash包括以下设置文件
+服务配置文件已在Logstash安装中定义。在docker中，配置文件放在/usr/share/logstash/config/目录中。Logstash包括以下设置文件
 
 - logstash.yml
 
@@ -36,10 +36,31 @@ Logstash有两种类型的配置文件：管道配置文件，用于定义Logsta
 
 ## tagz 方式安装测试使用
 
+    wget https://artifacts.elastic.co/downloads/logstash/logstash-7.3.1.tar.gz
+    tar -zxvf logstash-7.3.1
+
 ### 运行/测试logstash
 
     cd logstash-7.3.1
     bin/logstash -e 'input { stdin { } } output { stdout {} }'
+    
+### 其他说明
+
+- 校验管道配置文件是否合法
+
+      bin/logstash -f pipeline.conf --config.test_and_exit
+      
+  --config.test_and_exit选项会解析配置文件并报告任何错误。
+  
+  返回结果：
+  
+      [INFO ][logstash.runner          ] Using config.test_and_exit mode. Config Validation Result: OK. Exiting Logstash
+  
+- 自动配置重新加载
+
+      bin/logstash -f pipeline.conf --config.reload.automatic
+      
+  --config.reload.automatic选项启用自动配置重新加载，这样就不必在每次修改配置文件时停止并重新启动Logstash。
 
 ## docker 方式
 
@@ -74,4 +95,17 @@ Logstash有两种类型的配置文件：管道配置文件，用于定义Logsta
               "host" => "96aa414b7756"
     }
 
+### 其他说明
+
+- 校验管道配置文件是否合法
+
+      docker run --rm -it -e XPACK_MONITORING_ENABLED=false -v /opt/elk/config/pipeline/:/usr/share/logstash/pipeline/ logstash:7.3.1 --config.test_and_exit
+      
+  --config.test_and_exit选项会解析配置文件并报告任何错误。
+  
+- 自动配置重新加载
+
+      docker run --rm -it -e XPACK_MONITORING_ENABLED=false -v /opt/elk/config/pipeline/:/usr/share/logstash/pipeline/ logstash:7.3.1 --config.reload.automatic
+      
+  --config.reload.automatic选项启用自动配置重新加载，这样就不必在每次修改配置文件时停止并重新启动Logstash。
 
