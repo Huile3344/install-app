@@ -1,0 +1,5 @@
+#!groovy
+library "locals-jenkins-lib"
+
+
+locals()
