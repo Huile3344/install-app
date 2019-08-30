@@ -30,11 +30,11 @@ function install () {
   echo_exec "echo 'Hello Nginx!' > $INSTALL_ROOT/html/index.html"
 
   if $darwin; then
-      echo_exec "sed -i '' 's|/opt|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
-#      echo_exec "sed -i '' 's|/opt|$INSTALL_ROOT|g' $INSTALL_ROOT/nginx.conf"
+      echo_exec "sed -i '' 's|/opt/x|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
+#      echo_exec "sed -i '' 's|/opt/x|$INSTALL_ROOT|g' $INSTALL_ROOT/nginx.conf"
   else
-      echo_exec "sed -i 's|/opt|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
-#      echo_exec "sed -i 's|/opt|$INSTALL_ROOT|g' $INSTALL_ROOT/nginx.conf"
+      echo_exec "sed -i 's|/opt/x|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
+#      echo_exec "sed -i 's|/opt/x|$INSTALL_ROOT|g' $INSTALL_ROOT/nginx.conf"
   fi
 
   echo_exec "chmod +x $INSTALL_ROOT/$STACK_SHELL"

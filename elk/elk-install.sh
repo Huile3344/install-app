@@ -22,8 +22,9 @@ function install () {
   note "INSTALLER_ROOT: $INSTALL_ROOT"
   h1 "install $STACK_NAME of docker"
   echo_exec "mkdir -pv $INSTALL_ROOT/elasticsearch/{data,ik}"
-  echo_exec "mkdir -pv $INSTALL_ROOT/logstash/{config,pipeline,build}"
-  echo_exec "mkdir -pv $INSTALL_ROOT/grafana/data"
+  echo_exec "mkdir -pv $INSTALL_ROOT/logstash/{config,pipeline,data}"
+  echo_exec "mkdir -pv $INSTALL_ROOT/kibana/{config,data}"
+  echo_exec "mkdir -pv $INSTALL_ROOT/grafana/{data,logs,config}"
 #  echo_exec "unzip elasticsearch-analysis-ik-7.3.1.zip -d $INSTALL_ROOT/elasticsearch/ik"
 
   echo_exec "cp logstash.conf $INSTALL_ROOT/logstash/pipeline"
@@ -33,13 +34,13 @@ function install () {
 #  echo_exec "chown 1000:1000 -R $INSTALL_ROOT/"
 
   if $darwin; then
-      echo_exec "sed -i '' 's|/opt|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
+      echo_exec "sed -i '' 's|/opt/x|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
   else
-      echo_exec "sed -i 's|/opt|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
+      echo_exec "sed -i 's|/opt/x|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
   fi
 
   echo_exec "chmod +x $INSTALL_ROOT/$STACK_SHELL"
-  echo_exec "docker stack deploy -c $STACK_YML $INSTALL_ROOT/$STACK_NAME"
+  echo_exec "docker stack deploy -c $INSTALL_ROOT/$STACK_YML $STACK_NAME"
   echo_exec "sleep 3"
   echo_exec "docker stack services $STACK_NAME"
   success $"install docker stack [$STACK_NAME] successfully!"
