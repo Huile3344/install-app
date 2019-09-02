@@ -41,9 +41,9 @@ services:
 
   kibana:
     image: kibana:7.3.1
-    volumes:
+#    volumes:
 #      - /opt/x/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml
-      - /opt/x/kibana/data:/usr/share/kibana/data
+#      - /opt/x/kibana/data:/usr/share/kibana/data
     environment:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       - XPACK_SECURITY_ENABLED=false
@@ -61,7 +61,7 @@ services:
     volumes:
 #      - /opt/x/logstash/config/:/usr/share/logstash/config/
       - /opt/x/logstash/pipeline/:/usr/share/logstash/pipeline/
-      - /opt/x/logstash/data/:/usr/share/logstash/data/
+#      - /opt/x/logstash/data/:/usr/share/logstash/data/
 #      - /opt/x/logstash/plugins/:/usr/share/logstash/plugins/
     environment:
       - cluster.name=elk-cluster

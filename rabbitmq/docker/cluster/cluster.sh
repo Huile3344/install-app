@@ -5,25 +5,31 @@ source /opt/shell/log.sh
 START_PORT=5672
 NODES=3
 
-if [ -a config.sh ]
+if [ -a config.sh ];
 then
     source "config.sh"
 fi
 
-if [ "$1" == "create" ]
+if [ "$1" == "create" ];
 then
+    RABBIT=$2/rabbitmq
+    if [ $# -lt 2 ]; then
+        info "need secondery parameter for install path"
+        exit -1
+    fi
     # 拉取 rabbitmq 镜像
-    RABBITMQ_VERSION=3.6-management
-    #echo_exec "docker pull rabbitmq:${RABBITMQ_VERSION}"
+#    RABBITMQ_VERSION=3.6-management
+    RABBITMQ_VERSION=latest
+    #echo_exec "docker pull ${RABBITMQ_VERSION}"
 
     # 创建docker网络redis
-    echo_exec "docker network create rabbitmq-net"
+#    echo_exec "docker network create rabbitmq-net"
 
     HOSTS=""
     for SEQ in `seq 0 $((NODES-1))`; do
         PORT=$((${START_PORT}+SEQ))
-        echo_exec "mkdir -pv /data/rabbitmq-cluster/${PORT}/{conf,mnesia}"
-        echo_exec "cp rabbitmq.conf /data/rabbitmq-cluster/${PORT}/conf"
+        echo_exec "mkdir -pv $RABBIT/${PORT}/{conf,mnesia}"
+#        echo_exec "cp rabbitmq.conf $RABBIT/${PORT}/conf"
 
         bus_port=$((${PORT}+10000))
         #rabbitmq1 rabbitmq2  rabbitmq3
@@ -36,19 +42,19 @@ then
 #
 #    * Authentication failed (rejected by the remote node), please check the Erlang cookie
 
-#        -v /data/rabbitmq-cluster/${PORT}/conf/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf \
+#        -v $RABBIT/${PORT}/conf/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf \
         echo_exec "docker run -d -p ${PORT}:5672 -p ${bus_port}:15672 \
         -e RABBITMQ_NODENAME=rabbitmq${SEQ} \
-        -e RABBITMQ_ERLANG_COOKIE='mfp' \
+        -e RABBITMQ_ERLANG_COOKIE='rabbit' \
         -h rabbitmq${SEQ} \
-        -v /data/rabbitmq-cluster/${PORT}/mnesia:/var/lib/rabbitmq/mnesia \
+        -v $RABBIT/${PORT}/mnesia:/var/lib/rabbitmq/mnesia \
         --restart always --name rabbitmq${SEQ} --net rabbitmq-net \
         --sysctl net.core.somaxconn=1024 rabbitmq:${RABBITMQ_VERSION}"
 
         [ ${SEQ} -eq 0 ] && continue;
 
-        info "睡眠5秒，等待rabbitmq镜像容器正常启动"
-        echo_exec "sleep 5"
+        info "睡眠10秒，等待rabbitmq镜像容器正常启动"
+        echo_exec "sleep 10"
 
         info "将rabbitmq${SEQ}容器服务节点[rabbitmq${SEQ}@rabbitmq${SEQ}]加入到rabbitmq0容器服务节点[rabbitmq0@rabbitmq0]集群"
 
@@ -132,15 +138,21 @@ fi
 
 if [ "$1" == "clean" ]
 then
+    RABBIT=$2/rabbitmq
+    if [ $# -lt 2 ]; then
+        info "need secondery parameter for install path"
+        exit -1
+    fi
     for SEQ in `seq 0 $((NODES-1))`; do
         PORT=$((${START_PORT}+SEQ))
         info "Stopping rabbitmq${SEQ}"
         echo_exec "docker stop rabbitmq${SEQ}"
         info "removing container rabbitmq${SEQ}"
         echo_exec "docker rm rabbitmq${SEQ}"
-        echo_exec "rm -rf /data/rabbitmq-cluster/${PORT}"
+        echo_exec "rm -rf $RABBIT/${PORT}"
         info "------------------------------------"
     done
+    echo_exec "rm -rf $RABBIT"
     # 删除网络
     docker network rm rabbitmq-net
     exit 0
