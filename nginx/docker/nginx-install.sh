@@ -64,6 +64,10 @@ INSTALL_PATH=$(cd $2 && pwd)/${STACK_NAME}
 case $1 in
     clean)
         echo_exec "docker stack rm $STACK_NAME"
+        while [ 1 ]; do
+            echo_exec "docker stack ps $STACK_NAME" || break
+            sleep 2
+        done
         echo_exec "rm -rf $INSTALL_PATH"
         success $"clean $STACK_NAME environment directory successfully!"
     ;;

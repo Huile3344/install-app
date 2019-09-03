@@ -39,11 +39,34 @@ function install () {
   echo_exec "sleep 10"
   echo_exec "docker stack services $STACK_NAME"
   success $"install docker stack [$STACK_NAME] successfully!"
-  echo_exec "sleep 20"
+  sleep 20
+  while [ 1 ]; do
+      sleep 1
+      echo_exec "docker service ps rabbit_rabbit -f desired-state=Running"
+      if [ $? -eq 0 ]; then
+          break
+      fi
+      # 不截取错误信息
+      echo_exec "docker service ps rabbit_rabbit --no-trunc -f desired-state=Shutdown --format='{{.Error}}'"
+      if [ $? -eq 0 ]; then
+          error "rabbit_rabbit service 相关容器启动失败"
+          break
+      fi
+      if [ $? -eq 0 ]; then
+          echo_exec "docker service ps rabbit_rabbit -f desired-state=Ready"
+          info "rabbit_rabbit service 启动中..."
+      fi
+  done
+  echo_exec "docker exec -it \$(docker ps -q -f name=rabbit\\\\.) rabbitmqctl set_cluster_name rabbit@rabbit"
   # 等待服务大致启动完成后，执行以下内容才不会出错，否则即使服务正常也会出错
+  info "start join rabbit cluster"
   cluster rabbit@rabbit rabbit2 rabbit3
+  success $"configure rabbit cluster successfully!"
+  echo_exec "docker exec -it \$(docker ps -q -f name=rabbit\\\\.) rabbitmqctl set_policy ha-all \"^\" '{\"ha-mode\":\"all\"}'"
+  success $"configure mirror quene successfully!"
   success $"You Know, Time to You!"
 }
+
 
 function cluster () {
     CLUSTER=$1
@@ -51,7 +74,7 @@ function cluster () {
     shift
     for RABBIT in $*; do
         while [ 1 ]; do
-            echo_exec "sleep 1"
+            sleep 1
             echo_exec "docker service ps rabbit_$RABBIT -f desired-state=Running"
             if [ $? -eq 0 ]; then
                 break
@@ -99,6 +122,10 @@ INSTALL_PATH=$(cd $2 && pwd)/${STACK_NAME}
 case $1 in
     clean)
         echo_exec "docker stack rm $STACK_NAME"
+        while [ 1 ]; do
+            echo_exec "docker stack ps $STACK_NAME" || break
+            sleep 3
+        done
         echo_exec "rm -rf $INSTALL_PATH"
         success $"clean $STACK_NAME environment directory successfully!"
     ;;
