@@ -3,6 +3,7 @@
 - 官网: https://www.rabbitmq.com
 - GitHub: https://github.com/rabbitmq/rabbitmq-server
 - 官网集群搭建：https://www.rabbitmq.com/clustering.html#erlang-cookie
+- rabbitmq使用: https://www.jianshu.com/nb/15959541
 
 ## 使用说明
 
@@ -60,7 +61,9 @@
       rabbitmqctl set_permissions -p / admin '.*' '.*' '.*'
 
 
-## 镜像对列
+## 策略
+
+### 镜像对列
 
 - 有三种同步的方式，一般来说  all 是我们的最佳选择
 
@@ -88,7 +91,22 @@
 
     rabbitmqctl set_policy -p my-vhosts my-policy "^" '{"ha-mode":"all"}'
 
+### 备份交换器
 
+
+### 消息TTL
+
+### 死信队列 DLX(死信交换器)
+
+当消息在一个队列中变成死信后，它能被重新发送到另外一个交换器中，这个交换器就是DLX，绑定DLX的队列就称之为死信队列
+    
+消息变成死信一般是由于一下情况：
+
+- 消息被拒绝（Basic.Reject/Basic.Nack），并且设置requeue参数为false
+- 消息过期
+- 队列达到最大长度
+
+    rabbitmqctl set_policy DLX ".*" '{"dead-letter-exchange":"dlx_exchange"}'
 
 ## 插件
 
