@@ -33,7 +33,20 @@ if [ ! -d /etc/docker ]; then
 fi
 sudo tee /etc/docker/daemon.json <<-'EOF'
 {
-  "registry-mirrors": ["https://c174fa3u.mirror.aliyuncs.com"]
+    "oom-score-adjust": -1000,
+    "log-driver": "json-file",
+    "log-opts": {
+    "max-size": "100m",
+    "max-file": "3"
+    },
+    "max-concurrent-downloads": 10,
+    "max-concurrent-uploads": 10,
+    "bip": "169.254.123.1/24",
+    "registry-mirrors": ["https://7bezldxe.mirror.aliyuncs.com"],
+    "storage-driver": "overlay2",
+    "storage-opts": [
+    "overlay2.override_kernel_check=true"
+    ]
 }
 EOF
 echo_exec sudo systemctl daemon-reload

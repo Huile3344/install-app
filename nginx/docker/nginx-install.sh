@@ -29,7 +29,7 @@ function install () {
 #  echo_exec "cp nginx.conf $INSTALL_ROOT/nginx.conf"
   echo_exec "echo 'Hello Nginx!' > $INSTALL_ROOT/html/index.html"
 
-  if $darwin; then
+  if [ $darwin ]; then
       echo_exec "sed -i '' 's|/opt/x|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
 #      echo_exec "sed -i '' 's|/opt/x|$INSTALL_ROOT|g' $INSTALL_ROOT/nginx.conf"
   else

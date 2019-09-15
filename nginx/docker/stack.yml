@@ -6,8 +6,8 @@ services:
     ports:
       - 80:80
     volumes:
-      - /opt/x/nginx.conf:/etc/nginx/nginx.conf
+#      - /opt/x/nginx.conf:/etc/nginx/nginx.conf
       - /opt/x/html:/usr/share/nginx/html
-      - /opt/x/logs:/var/log/nginx
+#      - /opt/x/logs:/var/log/nginx
     deploy:
       replicas: 1

@@ -15,6 +15,7 @@ CYGWIN*) cygwin=true;;
 Darwin*) darwin=true;;
 OS400*) os400=true;;
 HP-UX*) hpux=true;;
+Linux*) linux=true;;
 esac
 
 function install () {
@@ -31,9 +32,11 @@ function install () {
   echo_exec "cp $STACK_SHELL $INSTALL_ROOT/$STACK_SHELL"
   echo_exec "cp $STACK_YML $INSTALL_ROOT/$STACK_YML"
 
-#  echo_exec "chown 1000:1000 -R $INSTALL_ROOT/"
+  if [ $linux ]; then
+    echo_exec "chown 1000:1000 -R $INSTALL_ROOT/"
+  fi
 
-  if $darwin; then
+  if [ $darwin ]; then
       echo_exec "sed -i '' 's|/opt/x|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
   else
       echo_exec "sed -i 's|/opt/x|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"

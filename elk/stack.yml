@@ -41,11 +41,12 @@ services:
 
   kibana:
     image: kibana:7.3.1
-#    volumes:
+    volumes:
 #      - /opt/x/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml
-#      - /opt/x/kibana/data:/usr/share/kibana/data
+      - /opt/x/kibana/data:/usr/share/kibana/data
     environment:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - ELASTICSEARCH_REQUESTTIMEOUT=90000
       - XPACK_SECURITY_ENABLED=false
       - XPACK_MONITORING_ENABLED=false
       - cluster.name=elk-cluster
@@ -111,6 +112,20 @@ services:
       restart_policy:
         condition: on-failure
         delay: 30s
+        
+#  filebeat:
+#    image: prima/filebeat:6
+#    volumes:
+#      - /opt/x/filebeat/config/filebeat.yml:/filebeat.yml
+#      - /opt/x/filebeat/data:/data
+#      - /var/lib/docker/containers:/var/lib/docker/containers
+#    networks:
+#      - elk-net
+#    deploy:
+#      mode: global
+#      restart_policy:
+#        condition: on-failure
+#        delay: 30s
 
   # 初始帐号密码admin/admin
   grafana:

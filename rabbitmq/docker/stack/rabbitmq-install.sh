@@ -28,7 +28,7 @@ function install () {
   echo_exec "cp $STACK_SHELL $INSTALL_ROOT/$STACK_SHELL"
   echo_exec "cp $STACK_YML $INSTALL_ROOT/$STACK_YML"
 
-  if $darwin; then
+  if [ $darwin ]; then
       echo_exec "sed -i '' 's|/opt/x|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
   else
       echo_exec "sed -i 's|/opt/x|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
