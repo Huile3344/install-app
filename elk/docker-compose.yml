@@ -40,7 +40,6 @@ services:
     volumes:
 #    - /opt/elk/config/logstash/:/usr/share/logstash/config/
     - /opt/elk/config/logstash/:/usr/share/logstash/pipeline/
-    - /opt/elk/build:/opt/build
     networks:
       - elk-net
     environment:
@@ -57,7 +56,7 @@ services:
 #  logspout:
 #    image: bekt/logspout-logstash
 #    environment:
-#      ROUTE_URIS: 'logstash+tcp://10.0.10.25:5001'
+#      ROUTE_URIS: 'logstash+tcp://logstash:5001'
 #    depends_on:
 #      - logstash
 #    volumes:
@@ -70,16 +69,35 @@ services:
 #        condition: on-failure
 #        delay: 30s
 
-  logspout:
-    image: bekt/logspout-logstash
-    environment:
-      ROUTE_URIS: 'logstash+tcp://logstash:5001'
-    depends_on:
-      - logstash
+#  filebeat:
+#    image: prima/filebeat:6
+#    volumes:
+#    - /opt/elk/filebeat/config/filebeat.yml:/filebeat.yml
+#    - /opt/elk/filebeat/data:/data
+#    - /opt/elk/filebeat/registry:/etc/registry
+#    - /var/lib/docker/containers:/var/lib/docker/containers:ro
+#    - /var/run/docker.sock:/var/run/docker.sock:ro
+#    networks:
+#    - locals-net
+#    deploy:
+#      mode: global
+#      restart_policy:
+#        condition: on-failure
+#        delay: 30s
+
+  filebeat:
+    image: elastic/filebeat:7.3.1
+    command: filebeat
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
+    - /opt/elk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+    - /opt/elk/filebeat/data:/usr/share/filebeat/data
+    - /opt/elk/filebeat/logs:/usr/share/filebeat/logs
+    #- /opt/elk/filebeat/registry:/etc/registry
+    - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    user: root
     networks:
-      - elk-net
+    - locals-net
     deploy:
       mode: global
       restart_policy:

@@ -1,7 +1,9 @@
 filebeat.inputs:
-- type: container
-  paths:
-  - "/var/lib/docker/containers/*/*.log"
+- type: docker
+  containers:
+    path: "/var/lib/docker/containers"
+    ids:
+    - "*"
   #include_lines: ['sometext']
   #exclude_lines: ['^DBG']
   json.keys_under_root: true # 因为docker使用的log driver是json-file，因此采集到的日志格式是json格式，设置为true之后，filebeat会将日志进行json_decode处理

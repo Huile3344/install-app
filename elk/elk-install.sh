@@ -26,9 +26,12 @@ function install () {
   echo_exec "mkdir -pv $INSTALL_ROOT/logstash/{config,pipeline,data}"
   echo_exec "mkdir -pv $INSTALL_ROOT/kibana/{config,data}"
   echo_exec "mkdir -pv $INSTALL_ROOT/grafana/{data,logs,config}"
+  echo_exec "mkdir -pv $INSTALL_ROOT/filebeat/{data,config}"
+  echo_exec "touch $INSTALL_ROOT/filebeat/registry"
 #  echo_exec "unzip elasticsearch-analysis-ik-7.3.1.zip -d $INSTALL_ROOT/elasticsearch/ik"
 
   echo_exec "cp logstash.conf $INSTALL_ROOT/logstash/pipeline"
+  echo_exec "cp filebeat.yml $INSTALL_ROOT/filebeat/config"
   echo_exec "cp $STACK_SHELL $INSTALL_ROOT/$STACK_SHELL"
   echo_exec "cp $STACK_YML $INSTALL_ROOT/$STACK_YML"
 
@@ -37,9 +40,11 @@ function install () {
   fi
 
   if [ $darwin ]; then
-      echo_exec "sed -i '' 's|/opt/x|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
+      echo_exec "sed -i '' 's|/opt/elk|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
+      echo_exec "sed -i '' 's|/opt/elk|$INSTALL_ROOT|g' $INSTALL_ROOT/filebeat/config/filebeat.yml"
   else
-      echo_exec "sed -i 's|/opt/x|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
+      echo_exec "sed -i 's|/opt/elk|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
+      echo_exec "sed -i 's|/opt/elk|$INSTALL_ROOT|g' $INSTALL_ROOT/filebeat/config/filebeat.yml"
   fi
 
   echo_exec "chmod +x $INSTALL_ROOT/$STACK_SHELL"
