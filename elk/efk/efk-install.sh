@@ -25,8 +25,7 @@ function install () {
   echo_exec "mkdir -pv $INSTALL_ROOT/elasticsearch/{data,ik}"
   echo_exec "mkdir -pv $INSTALL_ROOT/kibana/{config,data}"
   echo_exec "mkdir -pv $INSTALL_ROOT/grafana/{data,logs,config}"
-  echo_exec "mkdir -pv $INSTALL_ROOT/filebeat/{data,logs}"
-  echo_exec "touch $INSTALL_ROOT/filebeat/registry"
+  echo_exec "mkdir -pv $INSTALL_ROOT/filebeat/{data,logs,registry}"
 #  echo_exec "unzip elasticsearch-analysis-ik-7.3.1.zip -d $INSTALL_ROOT/elasticsearch/ik"
 
   echo_exec "cp filebeat-elasticsearch-docker.yml $INSTALL_ROOT/filebeat/filebeat.yml"

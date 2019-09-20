@@ -4,11 +4,18 @@ filebeat.inputs:
   - "/var/lib/docker/containers/*/*.log"
   #include_lines: ['sometext']
   #exclude_lines: ['^DBG']
-  json.keys_under_root: true # 因为docker使用的log driver是json-file，因此采集到的日志格式是json格式，设置为true之后，filebeat会将日志进行json_decode处理
-  json.add_error_key: true #如果启用此设置，则在出现JSON解组错误或配置中定义了message_key但无法使用的情况下，Filebeat将添加“error.message”和“error.type：json”键。
-  json.message_key: log #一个可选的配置设置，用于指定应用行筛选和多行设置的JSON密钥。 如果指定，键必须位于JSON对象的顶层，且与键关联的值必须是字符串，否则不会发生过滤或多行聚合。
+  # 因为docker使用的log driver是json-file，因此采集到的日志格式是json格式，设置为true之后，filebeat会将日志进行json_decode处理
+  json.keys_under_root: true
+  #如果启用此设置，则在出现JSON解组错误或配置中定义了message_key但无法使用的情况下，Filebeat将添加“error.message”和“error.type：json”键。
+  json.add_error_key: true
+  #一个可选的配置设置，用于指定应用行筛选和多行设置的JSON密钥。 如果指定，键必须位于JSON对象的顶层，且与键关联的值必须是字符串，否则不会发生过滤或多行聚合。
+  json.message_key: log
+  # 是否覆盖已经存在的key
+  json.overwrite_keys: true
+  # 是否从文件末尾开始收集日志
+  #tail_files: true
   # 将error日志合并到一行
-  #multiline.pattern: '^[0-9]{2}):[0-9]{2}:[0-9]{2}[.,]{1}[0-9]{3}'
+  #multiline.pattern: '^[0-9]{2}:[0-9]{2}:[0-9]{2}[.,]{1}[0-9]{3}'
   multiline.pattern: '^\s'
   multiline.negate: true
   multiline.match: after

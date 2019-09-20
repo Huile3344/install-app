@@ -78,7 +78,7 @@ services:
     - /opt/efk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
     - /opt/efk/filebeat/data:/usr/share/filebeat/data
     - /opt/efk/filebeat/logs:/usr/share/filebeat/logs
-    #- /opt/efk/filebeat/registry:/etc/registry
+    #- /opt/efk/filebeat/registry:/usr/share/filebeat/registry
     - /var/lib/docker/containers:/var/lib/docker/containers:ro
     - /var/run/docker.sock:/var/run/docker.sock:ro
     user: root
