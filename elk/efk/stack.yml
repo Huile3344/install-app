@@ -13,7 +13,7 @@ services:
       # 测试开发时开启此配置，避免磁盘告警导致无法启动
       - cluster.routing.allocation.disk.threshold_enabled=false
       # 集群名称
-      - cluster.name=elk-cluster
+      - cluster.name=efk-cluster
       # 节点名称
       - node.name=elasticsearch
       # cluster.initial_master_nodes 和 discovery.zen.ping.unicast.hosts 二选一
@@ -24,11 +24,11 @@ services:
       - http.cors.enabled=true
       - http.cors.allow-origin=*
     volumes:
-      - /opt/elk/elasticsearch/data:/usr/share/elasticsearch/data
+      - /opt/efk/elasticsearch/data:/usr/share/elasticsearch/data
     ports:
       - 9200:9200
     networks:
-      - elk-net
+      - efk-net
     deploy:
       mode: replicated
       replicas: 1
@@ -42,107 +42,70 @@ services:
   kibana:
     image: kibana:7.3.1
     volumes:
-#      - /opt/elk/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml
-      - /opt/elk/kibana/data:/usr/share/kibana/data
+#      - /opt/efk/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml
+      - /opt/efk/kibana/data:/usr/share/kibana/data
     environment:
       - ELASTICSEARCH_URL=http://elasticsearch:9200
       - ELASTICSEARCH_REQUESTTIMEOUT=90000
       - XPACK_SECURITY_ENABLED=false
       - XPACK_MONITORING_ENABLED=false
-      - cluster.name=elk-cluster
+      - cluster.name=efk-cluster
     ports:
       - 5601:5601
     networks:
-      - elk-net
+      - efk-net
     depends_on:
       - elasticsearch
-
-  logstash:
-    image: logstash:7.3.1
-    volumes:
-#      - /opt/elk/logstash/config/:/usr/share/logstash/config/
-      - /opt/elk/logstash/pipeline/:/usr/share/logstash/pipeline/
-#      - /opt/elk/logstash/data/:/usr/share/logstash/data/
-#      - /opt/elk/logstash/plugins/:/usr/share/logstash/plugins/
-    environment:
-      - cluster.name=elk-cluster
-    ports:
-      - 5000:5000
-      - 5044:5044
-    networks:
-      - elk-net
-    depends_on:
-      - elasticsearch
-    deploy:
-      replicas: 1
-      placement:
-        constraints:
-          - node.labels.logstash == 1
-
-#  logspout:
-#    image: bekt/logspout-logstash
-#    environment:
-#      ROUTE_URIS=logstash+tcp://10.0.10.25:5001'
+        
+#  filebeat:
+#    image: prima/filebeat:6
 #    volumes:
-#      - /var/run/docker.sock:/var/run/docker.sock
+#      - /opt/efk/filebeat/config/filebeat.yml:/filebeat.yml
+#      - /opt/efk/filebeat/data:/data
+#      - /var/lib/docker/containers:/var/lib/docker/containers
 #    networks:
-#      - elk-net
-#    depends_on:
-#      - logstash
+#      - efk-net
 #    deploy:
 #      mode: global
 #      restart_policy:
 #        condition: on-failure
 #        delay: 30s
 
-  logspout:
-    image: bekt/logspout-logstash
-    environment:
-      - ROUTE_URIS=logstash+tcp://logstash:5000
-#      - ROUTE_URIS=logstash+udp://logstash:5000
-#      - ROUTE_URIS=logstash://logstash:5000
+  filebeat:
+    image: elastic/filebeat:7.3.1
+    command: filebeat
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+    - /opt/efk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+    - /opt/efk/filebeat/data:/usr/share/filebeat/data
+    - /opt/efk/filebeat/logs:/usr/share/filebeat/logs
+    #- /opt/efk/filebeat/registry:/etc/registry
+    - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    user: root
     networks:
-      - elk-net
-    depends_on:
-      - logstash
+    - efk-net
     deploy:
       mode: global
       restart_policy:
         condition: on-failure
         delay: 30s
-        
-#  filebeat:
-#    image: prima/filebeat:6
-#    volumes:
-#      - /opt/elk/filebeat/config/filebeat.yml:/filebeat.yml
-#      - /opt/elk/filebeat/data:/data
-#      - /var/lib/docker/containers:/var/lib/docker/containers
-#    networks:
-#      - elk-net
-#    deploy:
-#      mode: global
-#      restart_policy:
-#        condition: on-failure
-#        delay: 30s
 
   # 初始帐号密码admin/admin
   grafana:
     image: grafana/grafana:latest
     volumes:
-#      - /opt/elk/grafana/config:/etc/grafana
-      - /opt/elk/grafana/data:/var/lib/grafana
-      - /opt/elk/grafana/logs:/var/log/grafana
+#      - /opt/efk/grafana/config:/etc/grafana
+      - /opt/efk/grafana/data:/var/lib/grafana
+      - /opt/efk/grafana/logs:/var/log/grafana
     environment:
-      - cluster.name=elk-cluster
+      - cluster.name=efk-cluster
       # 安装插件
 #      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
     ports:
       - 3000:3000
     user: root
     networks:
-      - elk-net
+      - efk-net
 
 networks:
-  elk-net:
+  efk-net:
