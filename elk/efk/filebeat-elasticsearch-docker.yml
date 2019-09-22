@@ -1,43 +1,92 @@
 filebeat.inputs:
+# 仅收集镜像名称包含 imageName 的APP容器日志
 - type: container
   paths:
-  - "/var/lib/docker/containers/*/*.log"
-  #include_lines: ['sometext']
-  #exclude_lines: ['^DBG']
-  # 因为docker使用的log driver是json-file，因此采集到的日志格式是json格式，设置为true之后，filebeat会将日志进行json_decode处理
-  json.keys_under_root: true
-  #如果启用此设置，则在出现JSON解组错误或配置中定义了message_key但无法使用的情况下，Filebeat将添加“error.message”和“error.type：json”键。
-  json.add_error_key: true
-  #一个可选的配置设置，用于指定应用行筛选和多行设置的JSON密钥。 如果指定，键必须位于JSON对象的顶层，且与键关联的值必须是字符串，否则不会发生过滤或多行聚合。
-  json.message_key: log
-  # 是否覆盖已经存在的key
-  json.overwrite_keys: true
+  - "/var/lib/docker/containers/*/*-json.log"
+  #- "/var/log/containers/*.log"
   # 是否从文件末尾开始收集日志
-  #tail_files: true
+  tail_files: true
   # 将error日志合并到一行
-  #multiline.pattern: '^[0-9]{2}):[0-9]{2}:[0-9]{2}[.,]{1}[0-9]{3}'
-  multiline.pattern: '^\s'
+  multiline.pattern: '^\\d{2}:\\d{2}:\\d{2}'
   multiline.negate: true
   multiline.match: after
   multiline.timeout: 10s
+  # APP 专有处理器
+  processors:
+  - drop_event:
+      when.not.contains:
+        container.image.name: "imageName"
+# 仅收集 stack 是 EFK 的容器日志
+- type: container
+  paths:
+  - "/var/lib/docker/containers/*/*-json.log"
+  #- "/var/log/containers/*.log"
+  # 是否从文件末尾开始收集日志
+  tail_files: true
+  # 将error日志合并到一行
+  multiline.pattern: '^(\{|\[|\\d{4}-\\d{2}-\\d{2})'
+  multiline.negate: true
+  multiline.match: after
+  multiline.timeout: 10s
+  # EFK 专有的处理器
+  processors:
+  - drop_event:
+      when.not.equals:
+        container.labels.com_docker_stack_namespace: "efk"
+# 收集其他 非EFK、非APP 的容器日志
+- type: container
+  paths:
+  - "/var/lib/docker/containers/*/*-json.log"
+  #- "/var/log/containers/*.log"
+  # 是否从文件末尾开始收集日志
+  tail_files: true
+  # 将error日志合并到一行
+  multiline.pattern: '^(\{|\[|\w)'
+  multiline.negate: true
+  multiline.match: after
+  multiline.timeout: 10s
+  # 专有的处理器
+  processors:
+  - drop_event:
+      when.or:
+        - equals:
+            container.labels.com_docker_stack_namespace: "efk"
+        - contains:
+            container.image.name: "imageName"
+
+# 通用配置
 #filebeat.registry_file: /usr/share/filebeat/registry
-#-------------------------- Elasticsearch output ------------------------------
-# 直接输出到elasticsearch,这里的hosts是elk地址，端口号是elasticsearch端口#
-output.elasticsearch:
-  hosts: ["elasticsearch:9200"]
-  #index: "filebeat-%{[agent.version]}-%{+yyyy.MM.dd}"
-  index: "filebeat-%{+yyyy.MM.dd}"
 
-#==================== Elasticsearch template setting ==========================
-
-setup.template.name: "filebeat.template.json"
-setup.template.fields: "filebeat.template.json"
-setup.template.overwrite: true
-setup.template.enabled: false
-
-# 过滤掉一些不必要字段#
+# 公共的处理器
 processors:
 - add_docker_metadata:
     host: "unix:///var/run/docker.sock"
 - drop_fields:
-    fields: ["input_type", "offset", "stream", "beat", "input", "ecs", "agent"]
+    fields: ["stream", "log", "input", "ecs", "agent"]
+
+#==================== Elasticsearch template setting ==========================
+setup.template.name: "filebeat"
+setup.template.fields: "filebeat.template.json"
+setup.template.overwrite: true
+setup.template.enabled: false
+
+#-------------------------- Elasticsearch output ------------------------------
+# 直接输出到elasticsearch,这里的hosts是elk地址，端口号是elasticsearch端口#
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]
+#  index: "filebeat-%{[agent.version]}-%{+yyyy.MM.dd}"
+  index: "filebeat-%{+yyyy.MM.dd}"
+  indices:
+    - index: "imageName-%{+yyyy.MM.dd}"
+      when.contains:
+        container.image.name: "imageName"
+    - index: "efk-%{+yyyy.MM.dd}"
+      when.equals:
+        container.labels.com_docker_stack_namespace: "efk"
+    - index: "image-%{+yyyy.MM.dd}"
+      when.and:
+      - not.equals:
+          container.labels.com_docker_stack_namespace: "efk"
+      - not.contains:
+          container.image.name: "imageName"
+      - has_fields: ['container.id']

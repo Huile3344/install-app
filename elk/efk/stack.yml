@@ -73,12 +73,12 @@ services:
 
   filebeat:
     image: elastic/filebeat:7.3.1
-    command: filebeat
+    command: filebeat -e
     volumes:
     - /opt/efk/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+    - /opt/efk/filebeat/filebeat.template.json:/usr/share/filebeat/filebeat.template.json:ro
     - /opt/efk/filebeat/data:/usr/share/filebeat/data
     - /opt/efk/filebeat/logs:/usr/share/filebeat/logs
-    #- /opt/efk/filebeat/registry:/usr/share/filebeat/registry
     - /var/lib/docker/containers:/var/lib/docker/containers:ro
     - /var/run/docker.sock:/var/run/docker.sock:ro
     user: root

@@ -8,6 +8,8 @@ STACK_YML=stack.yml
 STACK_SHELL=stack.sh
 # docker stack 使用的 STACK 名称
 STACK_NAME=efk
+# 专门收集的 APP 的 docker 镜像名包含的字符
+APP_IMAGE_NAME=locals
 
 case "`uname`" in
 CYGWIN*) cygwin=true;;
@@ -25,23 +27,26 @@ function install () {
   echo_exec "mkdir -pv $INSTALL_ROOT/elasticsearch/{data,ik}"
   echo_exec "mkdir -pv $INSTALL_ROOT/kibana/{config,data}"
   echo_exec "mkdir -pv $INSTALL_ROOT/grafana/{data,logs,config}"
-  echo_exec "mkdir -pv $INSTALL_ROOT/filebeat/{data,logs,registry}"
+  echo_exec "mkdir -pv $INSTALL_ROOT/filebeat/{data,logs,input}"
 #  echo_exec "unzip elasticsearch-analysis-ik-7.3.1.zip -d $INSTALL_ROOT/elasticsearch/ik"
 
   echo_exec "cp filebeat-elasticsearch-docker.yml $INSTALL_ROOT/filebeat/filebeat.yml"
+  echo_exec "cp filebeat.template.json $INSTALL_ROOT/filebeat/filebeat.template.json"
   echo_exec "cp $STACK_SHELL $INSTALL_ROOT/$STACK_SHELL"
   echo_exec "cp $STACK_YML $INSTALL_ROOT/$STACK_YML"
+  echo_exec "cp test-json.log $INSTALL_ROOT/filebeat/input/test-json.log"
 
   if [ $linux ]; then
-    echo_exec "chown 1000:1000 -R $INSTALL_ROOT/"
+    echo_exec "chown 1000:1000 -R $INSTALL_ROOT/elasticsearch/"
+    echo_exec "chown 1000:1000 -R $INSTALL_ROOT/kibana/"
   fi
 
   if [ $darwin ]; then
       echo_exec "sed -i '' 's|/opt/efk|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
-      echo_exec "sed -i '' 's|/opt/efk|$INSTALL_ROOT|g' $INSTALL_ROOT/filebeat/filebeat.yml"
+      echo_exec "sed -i '' 's|imageName|$APP_IMAGE_NAME|g' $INSTALL_ROOT/filebeat/filebeat.yml"
   else
       echo_exec "sed -i 's|/opt/efk|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
-      echo_exec "sed -i 's|/opt/efk|$INSTALL_ROOT|g' $INSTALL_ROOT/filebeat/filebeat.yml"
+      echo_exec "sed -i 's|imageName|$APP_IMAGE_NAME|g' $INSTALL_ROOT/filebeat/filebeat.yml"
   fi
 
   echo_exec "chmod +x $INSTALL_ROOT/$STACK_SHELL"
