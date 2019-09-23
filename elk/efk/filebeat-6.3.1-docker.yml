@@ -1,0 +1,106 @@
+# 对于多个 docker type 的处理有问题，7.3.1版本是没有问题的
+filebeat.inputs:
+# 仅收集镜像名称包含 locals 的APP容器日志
+- type: docker
+  containers:
+    path: "/var/lib/docker/containers"
+    ids:
+    - "*"
+  # 是否从文件末尾开始收集日志
+  #tail_files: true
+  # 将error日志合并到一行
+  multiline.pattern: '^\d{2}:\d{2}:\d{2}'
+  multiline.negate: true
+  multiline.match: after
+  multiline.timeout: 10s
+  # APP 专有处理器
+  processors:
+  - drop_event:
+      when.and:
+      - not.contains:
+          docker.container.image: "locals"
+      - not.contains:
+          docker.container.image: "provider"
+# 仅收集 stack 是 EFK 的容器日志
+- type: docker
+  containers:
+    path: "/var/lib/docker/containers"
+    ids:
+    - "*"
+  # 是否从文件末尾开始收集日志
+  #tail_files: true
+  # 将error日志合并到一行
+  multiline.pattern: '^(\{|\[|\d{4}-\d{2}-\d{2})'
+  multiline.negate: true
+  multiline.match: after
+  multiline.timeout: 10s
+  # EFK 专有的处理器
+  processors:
+  - drop_event:
+      when.not.equals:
+        docker.container.labels.com.docker.stack.namespace: "efk"
+# 收集其他 非EFK、非APP 的容器日志
+- type: docker
+  containers:
+    path: "/var/lib/docker/containers"
+    ids:
+    - "*"
+  # 是否从文件末尾开始收集日志
+  #tail_files: true
+  # 将error日志合并到一行
+  multiline.pattern: '^(\{|\[)'
+  multiline.negate: true
+  multiline.match: after
+  multiline.timeout: 10s
+  # 专有的处理器
+  processors:
+  - drop_event:
+      when.or:
+      - equals:
+          docker.container.labels.com.docker.stack.namespace: "efk"
+      - contains:
+          docker.container.image: "locals"
+      - contains:
+          docker.container.image: "provider"
+
+# 通用配置
+#filebeat.registry_file: /usr/share/filebeat/registry
+
+# 公共的处理器
+processors:
+- add_docker_metadata:
+    host: "unix:///var/run/docker.sock"
+- drop_fields:
+    fields: ["stream", "log", "input", "ecs", "agent", "offset", "beat", "prospector"]
+
+#==================== Elasticsearch template setting ==========================
+setup.template.name: "filebeat"
+setup.template.fields: "filebeat.template.json"
+setup.template.overwrite: true
+setup.template.enabled: false
+
+#-------------------------- Elasticsearch output ------------------------------
+# 直接输出到elasticsearch,这里的hosts是elk地址，端口号是elasticsearch端口#
+output.elasticsearch:
+  hosts: ["elasticsearch:9200"]
+  #  index: "filebeat-%{[agent.version]}-%{+yyyy.MM.dd}"
+  index: "filebeat-%{+yyyy.MM.dd}"
+  indices:
+  - index: "locals-%{+yyyy.MM.dd}"
+    when.or:
+    - contains:
+        docker.container.image: "locals"
+    - contains:
+        docker.container.image: "provider"
+  - index: "efk-%{+yyyy.MM.dd}"
+    when.equals:
+      docker.container.labels.com.docker.stack.namespace: "efk"
+  - index: "image-%{+yyyy.MM.dd}"
+    when.and:
+    - not.equals:
+        docker.container.labels.com.docker.stack.namespace: "efk"
+    - not.contains:
+        docker.container.image: "locals"
+    - not.contains:
+        docker.container.image: "provider"
+    - has_fields: ['docker.container.id']
