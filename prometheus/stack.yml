@@ -1,0 +1,154 @@
+version: "3"
+
+networks:
+  prom-net:
+
+#volumes:
+#  prometheus: {}
+#  grafana: {}
+#  alertmanager: {}
+
+#configs:
+#  prometheus_yml:
+#    file: /opt/prom/prometheus/prometheus.yml
+#  dockerd_config:
+#    file: ./dockerd-exporter/Caddyfile
+#  node_rules:
+#    file: /opt/prom/prometheus/rules/swarm_node.rules.yml
+#  task_rules:
+#    file: /opt/prom/prometheus/rules/swarm_task.rules.yml
+
+services:
+  prometheus:
+    image: prom/prometheus
+    # 通过storage.tsdb.path指定了 TSDB 数据的存储路径
+    # 通过storage.tsdb.retention设置了保留多长时间的数据
+    # 通过web.enable-admin-api参数可以用来开启对 admin api 的访问权限
+    # 通过web.enable-lifecycle非常重要，用来开启支持热更新的，有了这个参数之后，prometheus.yml 配置文件只要更新了，通过执行http://localhost:9090/-/reload就会立即生效，所以一定要加上这个参数
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention=7d'
+      - '--web.enable-admin-api'
+      - '--web.enable-lifecycle'
+    volumes:
+      - /opt/prom/prometheus/data:/prometheus
+      - /opt/prom/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+#    configs:
+#      - source: prometheus_yml
+#        target: /etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090
+    user: root
+    networks:
+      - prom-net
+    deploy:
+      mode: replicated
+      replicas: 1
+      resources:
+        limits:
+          memory: 2048M
+        reservations:
+          memory: 128M
+      placement:
+        constraints:
+          - node.role == manager
+#          - node.labels.prom == 1
+
+  alertmanager:
+    image: prom/alertmanager
+    command:
+    - '--config.file=/etc/alertmanager/alertmanager.yml'
+    - '--storage.path=/alertmanager'
+    volumes:
+    - /opt/prom/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    - /opt/prom/alertmanager/data:/alertmanager.yml
+    #    ports:
+    #      - 9093:9093
+    networks:
+    - prom-net
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+      placement:
+        constraints:
+        - node.role == manager
+
+  node-exporter:
+    image: prom/node-exporter
+    command:
+      - '--path.sysfs=/host/sys'
+      - '--path.procfs=/host/proc'
+      - '--collector.textfile.directory=/etc/node-exporter/'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--no-collector.ipvs'
+    environment:
+      - NODE_ID={{.Node.ID}}
+    volumes:
+      - /dev:/host/dev:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+      - /etc/hostname:/etc/nodename:ro
+#      - /opt/prom/node-exporter:/etc/node-exporter
+#    ports:
+#      - 9100:9100
+    networks:
+      - prom-net
+    deploy:
+      mode: global
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+      resources:
+        limits:
+          memory: 128M
+        reservations:
+          memory: 64M
+
+  cadvisor:
+    image: google/cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+#    ports:
+#      - 8080:8080
+    networks:
+      - prom-net
+    deploy:
+      mode: global
+      restart_policy:
+        condition: on-failure
+
+  # 初始帐号密码admin/admin
+  grafana:
+    image: grafana/grafana
+    environment:
+      - GF_USERS_ALLOW_SIGN_UP=false
+      # 默认账号/密码都是admin
+#      - GF_SECURITY_ADMIN_PASSWORD=your_password
+#    # 安装插件
+#      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel
+    volumes:
+#      - /opt/elk/grafana/config:/etc/grafana
+      - /opt/prom/grafana/datasources:/etc/grafana/datasources
+      - /opt/prom/grafana/dashboards:/etc/grafana/dashboards
+      - /opt/prom/grafana/data:/var/lib/grafana
+      - /opt/prom/grafana/logs:/var/log/grafana
+    ports:
+      - 3000:3000
+    user: root
+    networks:
+      - prom-net
+    deploy:
+      placement:
+        constraints:
+        - node.role == manager
