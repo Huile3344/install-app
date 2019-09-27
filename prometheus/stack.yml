@@ -96,6 +96,7 @@ services:
       - /sys:/host/sys:ro
       - /:/rootfs:ro
       - /etc/hostname:/etc/nodename:ro
+      - /etc/localtime:/etc/localtime:ro
 #      - /opt/prom/node-exporter:/etc/node-exporter
 #    ports:
 #      - 9100:9100
@@ -119,6 +120,8 @@ services:
       - /var/run:/var/run:rw
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk:/dev/disk:ro
+      - /etc/localtime:/etc/localtime:ro
 #    ports:
 #      - 8080:8080
     networks:
