@@ -85,9 +85,8 @@ services:
     command:
       - '--path.sysfs=/host/sys'
       - '--path.procfs=/host/proc'
-      - '--collector.textfile.directory=/etc/node-exporter/'
+#      - '--collector.textfile.directory=/etc/node-exporter/'
       - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
-      - '--no-collector.ipvs'
     environment:
       - NODE_ID={{.Node.ID}}
     volumes:
@@ -137,13 +136,15 @@ services:
     environment:
       - GF_USERS_ALLOW_SIGN_UP=false
       # 默认账号/密码都是admin
-#      - GF_SECURITY_ADMIN_PASSWORD=your_password
+      # 修改 grafana 默认账号
+      - GF_SECURITY_ADMIN_USER=admin
+      # 修改 grafana 默认密码
+      - GF_SECURITY_ADMIN_PASSWORD=admin
 #    # 安装插件
 #      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel
     volumes:
 #      - /opt/elk/grafana/config:/etc/grafana
-      - /opt/prom/grafana/datasources:/etc/grafana/datasources
-      - /opt/prom/grafana/dashboards:/etc/grafana/dashboards
+      - /opt/prom/grafana/config/provisioning:/etc/grafana/provisioning
       - /opt/prom/grafana/data:/var/lib/grafana
       - /opt/prom/grafana/logs:/var/log/grafana
     ports:

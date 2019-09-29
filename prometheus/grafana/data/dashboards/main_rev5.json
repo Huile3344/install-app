@@ -320,7 +320,7 @@
             "rgba(237, 129, 40, 0.89)",
             "rgba(50, 172, 45, 0.97)"
           ],
-          "datasource": "${DS_PROMETHEUS}",
+            "datasource": "${DS_PROMETHEUS}",
           "editable": true,
           "error": false,
           "format": "none",

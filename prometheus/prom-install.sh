@@ -25,27 +25,31 @@ function install () {
   echo_exec "mkdir -pv $INSTALL_ROOT/prometheus/data"
   echo_exec "mkdir -pv $INSTALL_ROOT/alertmanager/data"
   echo_exec "mkdir -pv $INSTALL_ROOT/node-exporter"
-  echo_exec "mkdir -pv $INSTALL_ROOT/grafana/{datasources,dashboards,config,logs}"
+  echo_exec "mkdir -pv $INSTALL_ROOT/grafana/{config,logs}"
   echo_exec "mkdir -pv $INSTALL_ROOT/grafana/data/plugins"
 
-  echo_exec "unzip grafana/plugins/grafana-simple-json-datasource-*.zip -d $INSTALL_ROOT/grafana/data/plugins/"
+  echo_exec "unzip grafana/data/plugins/grafana-simple-json-datasource-*.zip -d $INSTALL_ROOT/grafana/data/plugins/"
   echo_exec "mv $INSTALL_ROOT/grafana/data/plugins/grafana-simple-json-datasource-* $INSTALL_ROOT/grafana/data/plugins/grafana-simple-json-datasource"
-  echo_exec "unzip grafana/plugins/grafana-clock-panel-*.zip -d $INSTALL_ROOT/grafana/data/plugins/"
+  echo_exec "unzip grafana/data/plugins/grafana-clock-panel-*.zip -d $INSTALL_ROOT/grafana/data/plugins/"
   echo_exec "mv $INSTALL_ROOT/grafana/data/plugins/grafana-clock-panel-* $INSTALL_ROOT/grafana/data/plugins/grafana-clock-panel"
-  echo_exec "unzip grafana/plugins/grafana-piechart-panel-*.zip -d $INSTALL_ROOT/grafana/data/plugins/"
+  echo_exec "unzip grafana/data/plugins/grafana-piechart-panel-*.zip -d $INSTALL_ROOT/grafana/data/plugins/"
   echo_exec "mv $INSTALL_ROOT/grafana/data/plugins/grafana-piechart-panel-* $INSTALL_ROOT/grafana/data/plugins/grafana-piechart-panel"
 
   echo_exec "cp prometheus.yml $INSTALL_ROOT/prometheus/"
   echo_exec "cp alertmanager.yml $INSTALL_ROOT/alertmanager/"
+  echo_exec "cp -R grafana/data/dashboards $INSTALL_ROOT/grafana/data/"
+  echo_exec "cp -R grafana/provisioning $INSTALL_ROOT/grafana/config"
   echo_exec "cp $STACK_SHELL $INSTALL_ROOT/$STACK_SHELL"
   echo_exec "cp $STACK_YML $INSTALL_ROOT/$STACK_YML"
 
   if [ $darwin ]; then
       echo_exec "sed -i '' 's|/opt/prom|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
-      echo_exec "sed -i '' 's|/opt/prom|$INSTALL_ROOT|g' $INSTALL_ROOT/prometheus/prometheus.yml"
+      echo_exec "sed -i '' 's|\${DS_PROMETHEUS_111}|Prometheus|g' $INSTALL_ROOT/grafana/data/dashboards/1-node-exporter-0-16-for-prometheus_rev9.json"
+      echo_exec "sed -i '' 's|\${DS_PROMETHEUS_}|Prometheus|g' $INSTALL_ROOT/grafana/data/dashboards/main_rev5.json"
   else
       echo_exec "sed -i 's|/opt/prom|$INSTALL_ROOT|g' $INSTALL_ROOT/$STACK_YML"
-      echo_exec "sed -i 's|/opt/prom|$INSTALL_ROOT|g' $INSTALL_ROOT/prometheus/prometheus.yml"
+      echo_exec "sed -i 's|\${DS_PROMETHEUS_111}|Prometheus|g' $INSTALL_ROOT/grafana/data/dashboards/1-node-exporter-0-16-for-prometheus_rev9.json"
+      echo_exec "sed -i 's|\${DS_PROMETHEUS_}|Prometheus|g' $INSTALL_ROOT/grafana/data/dashboards/main_rev5.json"
   fi
 
   echo_exec "chmod +x $INSTALL_ROOT/$STACK_SHELL"

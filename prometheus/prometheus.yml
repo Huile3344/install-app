@@ -31,15 +31,25 @@ scrape_configs:
   - targets: ['localhost:9090']
 
 - job_name: 'cadvisor'
+  # 设定DNS A记录
   dns_sd_configs:
   - names:
     - 'tasks.cadvisor'
     type: 'A'
     port: 8080
+  # 把__meta_dns_name的值设置到指标的 cadvisor 这个label里
+  relabel_configs:
+  - source_labels: ['__meta_dns_name']
+    target_label: 'cadvisor'
 
 - job_name: 'node-exporter'
+  # 设定DNS A记录
   dns_sd_configs:
   - names:
     - 'tasks.node-exporter'
     type: 'A'
     port: 9100
+  # 把__meta_dns_name的值设置到指标的 node-exporter 这个label里
+  relabel_configs:
+  - source_labels: ['__meta_dns_name']
+    target_label: 'node_exporter'
