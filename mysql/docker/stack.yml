@@ -11,9 +11,9 @@ services:
     ports:
       - 3306:3306
     volumes:
-      - /data/mysql/docker-my.cnf:/etc/mysql/conf.d/my.cnf
-      - /data/mysql/logs:/logs
-      - /data/mysql/data:/var/lib/mysql
+      - /opt/mysql/docker-my.cnf:/etc/mysql/conf.d/my.cnf
+      - /opt/mysql/logs:/logs
+      - /opt/mysql/data:/var/lib/mysql
 
   adminer:
     image: adminer

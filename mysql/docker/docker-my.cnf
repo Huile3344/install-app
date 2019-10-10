@@ -1,12 +1,14 @@
 [mysqld]
 # pid文件所在目录
-#pid-file        = /data/mysql/mysqld.pid
+#pid-file        = /opt/mysql/mysqld.pid
 # MySQL客户端程序和服务器之间的本地通讯指定一个套接字文件
-#socket          = /data/mysql/mysqld.sock
+#socket          = /opt/mysql/mysqld.sock
+# docker 方式
+#socket          = /var/run/mysqld/mysqld.sock
 # 数据文件存放的目录
-#datadir         = /data/mysql/data
+#datadir         = /opt/mysql/data
 # MySQL存放临时文件的目录
-#tmpdir = /data/mysql/tmp
+#tmpdir = /opt/mysql/tmp
 # 服务端默认编码（数据库级别）
 character_set_server = utf8mb4
 # 服务端默认的比对规则，排序规则
