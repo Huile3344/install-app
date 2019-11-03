@@ -1,0 +1,30 @@
+version: '3.1'
+
+networks:
+  sm-net:
+    external: true
+
+services:
+  db:
+    image: mysql:5.7
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+    ports:
+      - 3306:3306
+    volumes:
+      - /opt/mysql/docker-my.cnf:/etc/mysql/conf.d/my.cnf
+      - /opt/mysql/logs:/logs
+      - /opt/mysql/data:/var/lib/mysql
+    networks:
+      - sm-net
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    networks:
+      - sm-net
+

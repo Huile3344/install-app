@@ -1,0 +1,28 @@
+[mysqld]
+# pid文件所在目录
+#pid-file        = /opt/mysql/mysqld.pid
+# MySQL客户端程序和服务器之间的本地通讯指定一个套接字文件
+#socket          = /opt/mysql/mysqld.sock
+# docker 方式
+#socket          = /var/run/mysqld/mysqld.sock
+# 数据文件存放的目录
+#datadir         = /opt/mysql/data
+# MySQL存放临时文件的目录
+#tmpdir = /opt/mysql/tmp
+# 服务端默认编码（数据库级别）
+character_set_server = utf8mb4
+# 服务端默认的比对规则，排序规则
+collation_server = utf8mb4_unicode_ci
+
+# 指定MySQL可能的连接数量。当MySQL主线程在很短的时间内得到非常多的连接请求，该参数就起作用，之后主线程花些时间（尽管很短）检查连接并且启动一个新线程。
+# back_log参数的值指出在MySQL暂时停止响应新请求之前的短时间内多少个请求可以被存在堆栈中。
+back_log = 1024
+
+default-storage-engine=INNODB
+sql_mode=NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES
+slow-query-log=1
+slow-query-log-file=/var/lib/mysql/slow-queries.log
+long_query_time=3
+log-queries-not-using-indexes
+# 忽略表名大小写
+lower_case_table_names=1
