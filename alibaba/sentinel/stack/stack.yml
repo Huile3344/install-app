@@ -1,0 +1,19 @@
+version: "3"
+
+networks:
+  sm-net:
+    external: true
+
+services:
+  sentinel:
+    image: sentinel-dashboard:1.6.3
+    volumes:
+    - /opt/sentinel/logs/:/root/logs
+    - /opt/sentinel/heap_dump:/heap_dump
+    ports:
+    - "8090:8080"
+    deploy:
+      restart_policy:
+        condition: on-failure
+    networks:
+    - sm-net
