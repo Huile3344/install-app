@@ -1,3 +1,4 @@
+# 对于多个 docker type 的处理有细节问题，每个 type 之间需要空白行，否则前面的 type 会受到后面 type 内部的 processors 影响，理论上 type 之间是不是彼此影响的
 filebeat.inputs:
 # 仅收集镜像名称包含 imageName 的APP容器日志
 - type: container
@@ -10,12 +11,12 @@ filebeat.inputs:
   multiline.pattern: '^\d{2}:\d{2}:\d{2}'
   multiline.negate: true
   multiline.match: after
-  multiline.timeout: 10s
   # APP 专有处理器
   processors:
   - drop_event:
       when.not.contains:
         container.image.name: "imageName"
+
 # 仅收集 stack 是 EFK 的容器日志
 - type: container
   paths:
@@ -27,12 +28,12 @@ filebeat.inputs:
   multiline.pattern: '^(\{|\[|\d{4}-\d{2}-\d{2})'
   multiline.negate: true
   multiline.match: after
-  multiline.timeout: 10s
   # EFK 专有的处理器
   processors:
   - drop_event:
       when.not.equals:
         container.labels.com_docker_stack_namespace: "efk"
+
 # 收集其他 非EFK、非APP 的容器日志
 - type: container
   paths:
@@ -41,10 +42,9 @@ filebeat.inputs:
   # 是否从文件末尾开始收集日志
   tail_files: true
   # 将error日志合并到一行
-  multiline.pattern: '^(\{|\[|\w)'
+  multiline.pattern: '^(\{|\[|\d{2}:\d{2}:\d{2}|\d{4}-\d{2}-\d{2}|level=)'
   multiline.negate: true
   multiline.match: after
-  multiline.timeout: 10s
   # 专有的处理器
   processors:
   - drop_event:
