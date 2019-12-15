@@ -32,7 +32,9 @@ services:
 #    - /opt/x/rabbit/data/mnesia/:/var/lib/rabbitmq/mnesia/
     # You can also mount a file at /etc/rabbitmq/enabled_plugins with contents as an erlang list of atoms ending with a period.
     # Example enabled_plugins: [rabbitmq_federation_management,rabbitmq_management,rabbitmq_mqtt,rabbitmq_stomp].
-#    - /opt/x/rabbit/enabled_plugins:/etc/rabbitmq/enabled_plugins
+    - /opt/x/rabbit/enabled_plugins:/etc/rabbitmq/enabled_plugins
+    # 容器的这个目录中原本就包含很多插件文件（.ez）文件，优先考虑从这里拷贝出来使用，其次再从rabbitmq官网的插件中下载
+    - /opt/x/rabbit/plugins:/opt/rabbitmq/plugins
     ports:
     - 5672:5672
     - 15672:15672
@@ -78,7 +80,9 @@ services:
 #    - /opt/x/rabbit2/data/mnesia/:/var/lib/rabbitmq/mnesia/
     # You can also mount a file at /etc/rabbitmq/enabled_plugins with contents as an erlang list of atoms ending with a period.
     # Example enabled_plugins: [rabbitmq_federation_management,rabbitmq_management,rabbitmq_mqtt,rabbitmq_stomp].
-#    - /opt/x/rabbit2/enabled_plugins:/etc/rabbitmq/enabled_plugins
+    - /opt/x/rabbit2/enabled_plugins:/etc/rabbitmq/enabled_plugins
+    # 容器的这个目录中原本就包含很多插件文件（.ez）文件，优先考虑从这里拷贝出来使用，其次再从rabbitmq官网的插件中下载
+    - /opt/x/rabbit2/plugins:/opt/rabbitmq/plugins
     ports:
     - 5673:5672
     networks:
@@ -125,7 +129,9 @@ services:
 #    - /opt/x/rabbit3/data/mnesia/:/var/lib/rabbitmq/mnesia/
     # You can also mount a file at /etc/rabbitmq/enabled_plugins with contents as an erlang list of atoms ending with a period.
     # Example enabled_plugins: [rabbitmq_federation_management,rabbitmq_management,rabbitmq_mqtt,rabbitmq_stomp].
-#    - /opt/x/rabbit3/enabled_plugins:/etc/rabbitmq/enabled_plugins
+    - /opt/x/rabbit3/enabled_plugins:/etc/rabbitmq/enabled_plugins
+    # 容器的这个目录中原本就包含很多插件文件（.ez）文件，优先考虑从这里拷贝出来使用，其次再从rabbitmq官网的插件中下载
+    - /opt/x/rabbit3/plugins:/opt/rabbitmq/plugins
     ports:
     - 5674:5672
     networks:

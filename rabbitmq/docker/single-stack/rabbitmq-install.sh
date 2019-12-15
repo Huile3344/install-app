@@ -21,10 +21,13 @@ function install () {
   INSTALL_ROOT=$1
   note "INSTALLER_ROOT: $INSTALL_ROOT"
   h1 "install $STACK_NAME of docker"
-  echo_exec "mkdir -pv $INSTALL_ROOT/rabbit/{config,ssl}"
+  echo_exec "mkdir -pv $INSTALL_ROOT/rabbit/{config,ssl,plugins}"
   echo_exec "mkdir -pv $INSTALL_ROOT/rabbit/data/mnesia"
 
-#  echo_exec "cp enabled_plugins $INSTALL_ROOT/enabled_plugins"
+  # 包含所有 rabbit 可用的插件文件（.ez后缀文件），优先考虑从这里拷贝出来使用，其次再从rabbitmq官网的插件中下载
+  echo_exec "cp -R plugins $INSTALL_ROOT/rabbit"
+  # 指明启用的 rabbit 插件
+  echo_exec "cp enabled_plugins $INSTALL_ROOT/rabbit"
   echo_exec "cp $STACK_SHELL $INSTALL_ROOT/$STACK_SHELL"
   echo_exec "cp $STACK_YML $INSTALL_ROOT/$STACK_YML"
 

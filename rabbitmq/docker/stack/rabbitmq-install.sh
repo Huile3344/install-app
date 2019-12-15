@@ -21,10 +21,15 @@ function install () {
   INSTALL_ROOT=$1
   note "INSTALLER_ROOT: $INSTALL_ROOT"
   h1 "install $STACK_NAME of docker"
-  echo_exec "mkdir -pv $INSTALL_ROOT/{rabbit,rabbit2,rabbit3}/{config,ssl}"
+  echo_exec "mkdir -pv $INSTALL_ROOT/{rabbit,rabbit2,rabbit3}/{config,ssl,plugins}"
   echo_exec "mkdir -pv $INSTALL_ROOT/{rabbit,rabbit2,rabbit3}/data/mnesia"
 
-#  echo_exec "cp enabled_plugins $INSTALL_ROOT/enabled_plugins"
+  echo_exec "cp -R plugins $INSTALL_ROOT/rabbit"
+  echo_exec "cp -R plugins $INSTALL_ROOT/rabbit2"
+  echo_exec "cp -R plugins $INSTALL_ROOT/rabbit3"
+  echo_exec "cp enabled_plugins $INSTALL_ROOT/rabbit"
+  echo_exec "cp enabled_plugins $INSTALL_ROOT/rabbit2"
+  echo_exec "cp enabled_plugins $INSTALL_ROOT/rabbit3"
   echo_exec "cp $STACK_SHELL $INSTALL_ROOT/$STACK_SHELL"
   echo_exec "cp $STACK_YML $INSTALL_ROOT/$STACK_YML"
 
