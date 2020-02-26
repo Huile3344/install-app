@@ -14,8 +14,8 @@ services:
     # 可使用docker secret替换
     - RABBITMQ_ERLANG_COOKIE=rabbit
     - RABBITMQ_NODENAME=rabbit@rabbit
-    # 额外插件所在目录
-    - RABBITMQ_PLUGINS_EXPAND_DIR=/opt/rabbitmq/plugins-expand
+    # 插件所在目录
+    - RABBITMQ_PLUGINS_DIR=/opt/rabbitmq/plugins:/opt/rabbitmq/plugins-other
     # If you wish to change the default vhost, you can do so with the RABBITMQ_DEFAULT_VHOST environmental variables
 #    - RABBITMQ_DEFAULT_VHOST=/
     # If you wish to change the default username and password of guest / guest,
@@ -31,7 +31,7 @@ services:
 #    - RABBITMQ_MANAGEMENT_SSL_VERIFY
     volumes:
     # config file(s)
-    - /opt/x/rabbit/config/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    - /opt/x/rabbit/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
     # home dir
     - /opt/x/rabbit/data:/var/lib/rabbitmq
     # database dir
@@ -40,10 +40,16 @@ services:
     # Example enabled_plugins: [rabbitmq_federation_management,rabbitmq_management,rabbitmq_mqtt,rabbitmq_stomp].
     - /opt/x/rabbit/enabled_plugins:/etc/rabbitmq/enabled_plugins
     # 容器的这个目录中原本就包含很多插件文件（.ez）文件，优先考虑从这里拷贝出来使用，其次再从rabbitmq官网的插件中下载
-    - /opt/x/rabbit/plugins-expand:/opt/rabbitmq/plugins-expand
+    - /opt/x/rabbit/plugins-other:/opt/rabbitmq/plugins-other
     ports:
     - 5672:5672
+    # 需要启用插件 rabbitmq_management
     - 15672:15672
+    # 需要启用插件 rabbitmq_stomp
+    - 61613:61613
+    # 需要启用插件 rabbitmq_web_stomp  ，可选的 rabbitmq_web_stomp_examples
+    - 15674:15674
+    - 15670:15670
     networks:
       - sm-net
 #    deploy:

@@ -1,1 +1,1 @@
-[rabbitmq_management,rabbitmq_delayed_message_exchange].
+[rabbitmq_management,rabbitmq_delayed_message_exchange,rabbitmq_stomp,rabbitmq_web_stomp,rabbitmq_web_stomp_examples].
