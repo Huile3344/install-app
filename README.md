@@ -12,6 +12,15 @@
   * close_yum-cron.sh 关闭 CentOS 中 yum 自动更新软件功能
   * **log.sh** shell脚本 source 该文件后，可支持各种级别shell日志输出(日志带色彩)，大部分脚本中都有对该文件的引用
   * **purge-win-shell.sh** 执行 /opt/shell/purge-win-shell.sh filename 剔除从 windows 拷贝到 linux 的脚本文件换行符多余的 ^M 字符
+
+# Linux 服务器同步时间命令
+
+- *ntpdate*立即同步修改服务器时间，与阿里云服务器时间保持同步
+```shell script
+ntpdate ntp1.aliyun.com
+```
+
+- *ntp*平滑同步修改服务器时间
   
 # Docker容器指定自定义网段的固定IP/静态IP地址
 ## 方案一
