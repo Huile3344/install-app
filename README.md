@@ -50,4 +50,51 @@ ntpdate ntp1.aliyun.com
 
     iptables -t nat -I POSTROUTING -o eth0 -d  0.0.0.0/0 -s 172.18.0.10  -j SNAT --to-source 104.232.36.109
     
+# Linux Tips
+
+## Linux 脚本
+
+### 脚本中的 `set -e` 和 `set +e` 及其他选项
+- **`set -e`** ： 执行的时候如果出现了返回值为非零，整个脚本 就会立即退出 
+- **`set +e`**： 执行的时候如果出现了返回值为非零将会继续执行下面的脚本 
+
+| 选项名 | 快捷开关 | 含义 |
+| ---- | --- | ---- |		
+| allexport | -a | 从这个选项中被设置开始就自动标明要输出的新变量或修改过的变量，直至选项被复位 |
+| braceexpand | -B | 打开花括号扩展，它是一个默认设置 |
+| emacs | | 使用emacs内置编辑器进行命令行编辑，是一个默认设置 |
+| errexit | -e | 当命令返回一个非零退出状态（失败）时退出。读取初始化文件时不设置 |
+| histexpand | -H | 执行历史替换时打开!和!!扩展，是一个默认设置 |
+| history | | 打开命令行历史、默认为打开 |
+| ignoreeof	| | 禁止用EOF(Ctrl+D)键退出shell。必须键入exit才能退出。等价于设置shell变量IGNOREEOF=10 |
+| keyword | -k | 将关键字参数放到命令的环境中 |
+| interactive-comments | | 对于交互式shell，把#符后面的文本作为注释 |
+| monitor | -m | 设置作业控制 |
+| noclobber	| -C | 防止文件在重定向时被重写 |
+| noexec | -n | 读命令，但不执行。用来检查脚本的语法。交互式运行时不开启 |
+| noglob | -d | 禁止用路径名扩展。即关闭通配符 |
+| notify | -b | 后台作业完成时通知用户 |
+| nounset | -u | 扩展一个未设置的变量时显示一个错误信息 |
+| onecmd | -t |在读取和执行命令后退出 |
+| physical | -P |设置时，在键入cd或pwd禁止符号链接。用物理目录代替 |
+| privileged | -p |设置后，shell不读取.profile或ENV文件，且不从环境继承shell函数，将自动为setuid脚本开启特权 |
+| verbose | -v 	为调试打开verbose模式 |
+| vi | | 使用vi内置编辑器进行命令行编辑 |
+| xtrace | -x | 为调试打开echo模式 |
+
+### 基于上一个命令结果，执行其他命令
+```
+if [ "$?"-ne 0]; then echo "command failed"; exit 1; fi
+```
+可以替换成： 
+```
+command ||  echo "command failed"; exit 1; （这种写法并不严谨，我当时的场景是执行ssh "commond"，
+所以可以返回退出码后面通过[ #？ -eq 0 ]来做判断，如果是在shell中无论成功还是失败都会exit）
+command || (echo "command failed"; exit 1);
+```
+或者使用： 
+```
+if ! command; then echo "command failed"; exit 1; fi
+```
+
       
