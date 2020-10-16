@@ -1,6 +1,12 @@
 #!/bin/bash
+# 使用示例：
+# ./attach-arthas.sh help
+# ./attach-arthas.sh grep docker容器名
+# ./attach-arthas.sh install
 
 source /opt/shell/log.sh
+
+set +e
 
 case "`uname`" in
 CYGWIN*) cygwin=true;;
@@ -12,8 +18,8 @@ Linux*) linux=true;;
 esac
 
 #本地是否有jdk
-java -version &> /dev/null && local_jdk=0
-arthas_version=
+#java -version &> /dev/null && local_jdk=0
+#arthas_version=
 
 function help () {
     echo "usage: $1 [help|install|grep PATTERN]"
@@ -27,8 +33,7 @@ function download () {
   # 下载 arthas
   if [ ! -e arthas-boot.jar ]; then
     h2 "下载 arthas"
-    echo_exec "curl -O https://arthas.aliyun.com/arthas-boot.jar"
-    if [ 0 -ne $? ]; then
+    if ! echo_exec "curl -O https://arthas.aliyun.com/arthas-boot.jar"; then
       echo_exec "rm -rf arthas-boot.jar"
       error "download arthas failed!"
       exit 1
@@ -36,7 +41,7 @@ function download () {
   fi
 }
 
-function install () {
+function old_install () {
   download
   if [ 0 -eq $local_jdk ]; then
     # 获取 arthas 版本
@@ -53,6 +58,29 @@ function install () {
       info "完成下载 arthas ${arthas_version} 版本依赖的jar包"
     fi
   fi
+}
+
+function install () {
+  # 下载 arthas
+  if [ ! -e manual/arthas-packaging-bin.zip ]; then
+    if [ ! -d manual ]; then
+      echo_exec "mkdir manual"
+    fi
+    h2 "手动安装 arthas"
+
+    if ! echo_exec "wget https://arthas.aliyun.com/download/latest_version?mirror=aliyun -O manual/arthas-packaging-bin.zip"; then
+      echo_exec "rm -rf manual/arthas-packaging-bin.zip"
+      error "download arthas failed!"
+      exit 1
+    fi
+    echo_exec "cd manual"
+    echo_exec "unzip arthas-packaging-bin.zip"
+    echo_exec "rm -rf ~/.arthas/lib/*"
+    echo_exec "./install-local.sh"
+  fi
+
+#  # 以脚本的方式启动
+#  echo_exec "curl -L https://arthas.aliyun.com/install.sh | sh"
 }
 
 function grepFunc () {
@@ -81,17 +109,16 @@ function grepFunc () {
     ID=$(echo "$CTN" | awk '{print $1}')
   fi
 
-  if [ 0 -eq $local_jdk ]; then
+  arthas_version=$(ls ~/.arthas/lib/ | sort | tail -1)
+
+  # 判断 arthas 是否已经安装,执行结果返回：0表示文件已经存在，1表示文件或目录不存在。注意上面的 docker exec 的选项是 -i 而不是 -it，否则结果永远是0
+  if ! docker exec -i $ID /bin/sh -c "[ -d ~/.arthas/lib/$arthas_version -a -e ~/.arthas/lib/$arthas_version/arthas/arthas-boot.jar ]"; then
     # 由于无法解析变量和~，因此先将文件放到 /tmp/ 目录下
-    echo_exec "docker cp ~/.arthas/lib/$arthas_version $ID:/tmp/"
-    # 在用户目录下创建 arthas 目录，并将 /tmp/ 目录下的内容还原, 使用使用 if 方式，而不是[]方式，否则执行到此行返回结果是1，无法继续执行
-    echo_exec "docker exec -it $ID /bin/sh -c \"if [ ! -d ~/.arthas/lib/$arthas_version ]; then \
-      mkdir -p ~/.arthas/lib && mv /tmp/$arthas_version ~/.arthas/lib; fi\""
-    echo_exec "docker exec -it $ID /bin/sh -c \"java -jar ~/.arthas/lib/$arthas_version/arthas/arthas-boot.jar\""
-  else
-    echo_exec "docker cp arthas-boot.jar $ID:/arthas-boot.jar"
-    echo_exec "docker exec -it $ID /bin/sh -c \"java -jar /arthas-boot.jar\""
+    docker cp ~/.arthas/lib/$arthas_version $ID:/tmp/
+    # 在用户目录下创建 arthas 目录，并将 /tmp/ 目录下的内容还原, 使用 if 方式，而不是[]方式，否则执行到此行返回结果是1，无法继续执行
+    docker exec -i $ID /bin/sh -c "mkdir -p ~/.arthas/lib && mv /tmp/$arthas_version ~/.arthas/lib"
   fi
+  echo_exec "docker exec -it $ID /bin/sh -c \"java -jar ~/.arthas/lib/$arthas_version/arthas/arthas-boot.jar\""
 }
 
 case $1 in
