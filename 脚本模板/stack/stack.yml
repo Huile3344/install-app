@@ -1,0 +1,56 @@
+version: "3"
+
+networks:
+  sm-net:
+    external: true
+
+services:
+  rabbit:
+#    image: rabbitmq:3.7.17-management
+    image: rabbitmq:management
+    environment:
+    # vm_memory_high_watermark
+#    - RABBITMQ_VM_MEMORY_HIGH_WATERMARK=56%
+    # 可使用docker secret替换
+    - RABBITMQ_ERLANG_COOKIE=rabbit
+    - RABBITMQ_NODENAME=rabbit@rabbit
+    # If you wish to change the default vhost, you can do so with the RABBITMQ_DEFAULT_VHOST environmental variables
+#    - RABBITMQ_DEFAULT_VHOST=/
+    # If you wish to change the default username and password of guest / guest,
+    # you can do so with the RABBITMQ_DEFAULT_USER and RABBITMQ_DEFAULT_PASS environmental variables
+#    - RABBITMQ_DEFAULT_USER=guest
+#    - RABBITMQ_DEFAULT_PASS=guest
+    # For SSL configuration using the management plugin
+#    - RABBITMQ_MANAGEMENT_SSL_CACERTFILE
+#    - RABBITMQ_MANAGEMENT_SSL_CERTFILE
+#    - RABBITMQ_MANAGEMENT_SSL_DEPTH
+#    - RABBITMQ_MANAGEMENT_SSL_FAIL_IF_NO_PEER_CERT
+#    - RABBITMQ_MANAGEMENT_SSL_KEYFILE
+#    - RABBITMQ_MANAGEMENT_SSL_VERIFY
+    volumes:
+    # config file(s)
+#    - /opt/x/rabbit/config/rabbitmq.config:/etc/rabbitmq/rabbitmq.config
+    # home dir
+    - /opt/x/rabbit/data:/var/lib/rabbitmq
+    # database dir
+#    - /opt/x/rabbit/data/mnesia/:/var/lib/rabbitmq/mnesia/
+    # You can also mount a file at /etc/rabbitmq/enabled_plugins with contents as an erlang list of atoms ending with a period.
+    # Example enabled_plugins: [rabbitmq_federation_management,rabbitmq_management,rabbitmq_mqtt,rabbitmq_stomp].
+    - /opt/x/rabbit/enabled_plugins:/etc/rabbitmq/enabled_plugins
+    # 容器的这个目录中原本就包含很多插件文件（.ez）文件，优先考虑从这里拷贝出来使用，其次再从rabbitmq官网的插件中下载
+    - /opt/x/rabbit/plugins:/opt/rabbitmq/plugins
+    ports:
+    - 5672:5672
+    - 15672:15672
+    networks:
+    - sm-net
+    deploy:
+      mode: replicated
+      replicas: 1
+#      resources:
+#        limits:
+#          memory: 1g
+#      placement:
+#        constraints:
+#        - node.labels.rabbit1 == 1
+

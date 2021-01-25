@@ -1,0 +1,28 @@
+version: "3"
+
+networks:
+  sm-net:
+    external: true
+
+services:
+  minio:
+    image: minio/minio
+    command: server /data
+    volumes:
+    - /opt/minio/data:/data
+    ports:
+    - 9000:9000
+    networks:
+    - sm-net
+    deploy:
+      mode: replicated
+      replicas: 1
+#      resources:
+#        limits:
+#          memory: 1g
+#      placement:
+#        constraints:
+#        - node.labels.rabbit1 == 1
+#        - node.role == manager
+
+
