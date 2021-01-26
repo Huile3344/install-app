@@ -7,9 +7,15 @@ networks:
 services:
   minio:
     image: minio/minio
-    command: server /data
+    command: server /data{1...4}
+    environment:
+    - MINIO_ROOT_USER=minioadmin
+    - MINIO_ROOT_PASSWORD=minioadmin
     volumes:
     - /opt/minio/data:/data
+    - /opt/minio/data2:/data2
+    - /opt/minio/data3:/data3
+    - /opt/minio/data4:/data4
     ports:
     - 9000:9000
     networks:

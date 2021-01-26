@@ -7,6 +7,6 @@ function install () {
   h1 "install $STACK_NAME of docker"
 
   # 特定安装罗，根据安装需要填写
-  echo_exec "mkdir -pv /opt/minio/{logs,data}"
+  echo_exec "mkdir -pv /opt/minio/{data,data2,data3,data4}"
 }
 
