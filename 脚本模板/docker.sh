@@ -12,6 +12,7 @@ source /opt/shell/log.sh
 function help () {
     echo "usage: $1 STACK_NAME [grep|arthas|help] [OPTION]"
     echo "    grep                -- grep docker running containers."
+    echo "    exec                -- grep docker running containers, and exec -it to a running container."
     echo "    arthas              -- grep docker running containers, and attach a running container."
     echo "    svc                 -- show serivices of docker stack [STACK NAME]."
     echo "    svc-ps <service>    -- show services ps of docker stack [STACK NAME]."
@@ -20,6 +21,7 @@ function help () {
     echo ""
     echo "examples:"
     echo "    $1 grep [CONTAINER PREFIX]."
+    echo "    $1 exec [CONTAINER PREFIX]."
     echo "    $1 arthas [CONTAINER PREFIX]."
     echo "    $1 svc [STACK NAME]."
     echo "    $1 svc-ps [SERVICE]."
@@ -43,6 +45,44 @@ function onlyGrep () {
     exit 1
   fi
   echo $CTN
+}
+
+function selectContainerToRun () {
+  # 查找匹配的运行中的容器
+  CTN=$(docker ps -f status=running | grep $1)
+  if [ 0 -ne $? ]; then
+    error "not find any match containers"
+    exit 1
+  fi
+
+  # shift 按顺序剔除参数，即剔除第一个参数
+  shift
+
+  # 筛选合适的容器，注意 echo $CTN 和 echo "$CTN" 的差异，前者多行结果会合并成一行输出，后者不会
+  NUM=$(echo "$CTN" | awk 'END {print NR}')
+  # 多个匹配的容器
+  if [ 1 -lt $NUM ]; then
+    info "存在多个匹配的 docker 容器，请选中一个容器的序号输入，如: 1 再点击 ENTER 。"
+    for SEQ in `seq 1 $NUM`; do
+      info "[$SEQ]: $(echo "$CTN" | awk 'NR=='$SEQ' {print $0}')"
+    done
+    read INPUT
+    ID=$(echo "$CTN" | awk 'NR=='$INPUT' {print $1}')
+    CTN_NAME=$(echo "$CTN" | awk 'NR=='$INPUT' {print $NF}')
+  else
+    ID=$(echo "$CTN" | awk '{print $1}')
+    CTN_NAME=$(echo "$CTN" | awk '{print $NF}')
+  fi
+  info "selected container is $ID $CTN_NAME"
+
+  # 执行传入的函数，将容器ID作为参数
+  $@ $ID
+
+}
+
+function execFunc () {
+  # 进入容器
+  docker exec -it $1 /bin/sh
 }
 
 function installArthas () {
@@ -85,27 +125,8 @@ function installArthas () {
   exit 1
 }
 
-function arthas () {
-  # 查找匹配的运行中的容器
-  CTN=$(onlyGrep $1)
-
-  if [ 0 -ne $? ]; then
-    exit 1
-  fi
-
-  # 筛选合适的容器，注意 echo $CTN 和 echo "$CTN" 的差异，前者多行结果会合并成一行输出，后者不会
-  NUM=$(echo "$CTN" | awk 'END {print NR}')
-  # 多个匹配的容器
-  if [ 1 -lt $NUM ]; then
-    info "存在多个匹配的 docker 容器，请选中一个容器的序号输入，如: 1 再点击 ENTER 。"
-    for SEQ in `seq 1 $NUM`; do
-      info "[$SEQ]: $(echo "$CTN" | awk 'NR=='$SEQ' {print $0}')"
-    done
-    read INPUT
-    ID=$(echo "$CTN" | awk 'NR=='$INPUT' {print $1}')
-  else
-    ID=$(echo "$CTN" | awk '{print $1}')
-  fi
+function arthasFunc () {
+  ID=$1
   # 安装arthas
   arthas_version=$(installArthas)
   info $arthas_version
@@ -124,8 +145,11 @@ case $1 in
     grep)
       onlyGrep $2
     ;;
+    exec)
+        selectContainerToRun $2 execFunc
+    ;;
     arthas)
-        arthas $2
+        selectContainerToRun $2 arthasFunc
     ;;
     svc)
         echo_exec "docker stack services $2"

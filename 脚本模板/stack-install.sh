@@ -49,20 +49,24 @@ function help () {
 #else
 #    INSTALL_PATH=$(readlink -f $(dirname "${BASH_SOURCE}"))
 #fi
-INSTALL_PATH=$(cd $3 && pwd)/$1
+
 
 case $2 in
     clean)
+        INSTALL_PATH=$(cd $3 && pwd)/$1
         echo_exec "docker stack rm $1"
-        while [ 1 ]; do
-            docker stack ps $1 || break
-            echo .
-            sleep 3
+        while [ $(docker stack ps $1) ]; do
+            #docker stack ps $1 || break
+            # 不换行输出
+            echo  -e ".\c"
+            sleep 1
         done
+        echo
         echo_exec "rm -rf $INSTALL_PATH"
         success $"clean $2 environment directory successfully!"
     ;;
     install)
+        INSTALL_PATH=$(cd $3 && pwd)/$1
         # 安装脚本: 如:install.sh
         source ${4:-install.sh}
         install $INSTALL_PATH
