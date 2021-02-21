@@ -1,0 +1,214 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name=”applicable-device” content=”pc,mobile”>
+  <title>直播视频在线播放</title>
+  <meta name="keywords" content="直播,在线播放,直播在线播放,视频,m3u8,flv,rtmp,mp4,在线">
+  <meta name="description" content="好用的m3u8,flv,rtmp直播地址在线播放">
+  <link rel="stylesheet" href="/public/css/bootstrap.css">
+  <script src="/public/js/ckplayer/ckplayer.js"></script>
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'UA-145094982-1');
+  </script>
+</head>
+<body class="bg-light">
+<!--头部-->
+<header>
+  <div class="navbar navbar-dark bg-dark shadow-lg">
+    <div class="container d-flex justify-content-between">
+      <a href="/" class="navbar-brand d-flex align-items-center">
+        直播视频在线播放
+      </a>
+    </div>
+  </div>
+</header>
+<!--内容-->
+<main class="">
+  <div class="container">
+    <!--地址栏-->
+    <div class="mt-5 ml-2 mr-2">
+      <!--m3u8-->
+      <div class="input-group">
+        <div class="input-group-prepend">
+          <span class="input-group-text">M3U8</span>
+        </div>
+        <input id="video_url_m3u8" type="text" class="form-control" placeholder="video url" aria-label="video url"
+               aria-describedby="playVideo" value="http://www.flashls.org/playlists/test_001/stream.m3u8">
+        <div class="input-group-append">
+          <button class="btn btn-primary" onclick="playVideoM3u8()">播放</button>
+        </div>
+      </div>
+
+      <!--rtmp-->
+      <div class="input-group mt-2">
+        <div class="input-group-prepend">
+          <span class="input-group-text">RTMP</span>
+        </div>
+        <input id="video_url_rtmp" type="text" class="form-control" placeholder="video url" aria-label="video url"
+               aria-describedby="playVideo" value="rtmp://video.com/hls/b">
+        <div class="input-group-append">
+          <button class="btn btn-primary" onclick="playVideoRtmp()">播放</button>
+        </div>
+      </div>
+
+      <!--flv-->
+      <div class="input-group  mt-2">
+        <div class="input-group-prepend">
+          <span class="input-group-text">HTTP-FLV</span>
+        </div>
+        <input id="video_url_flv" type="text" class="form-control" placeholder="video url" aria-label="video url"
+               aria-describedby="playVideo"
+               value="http://video.com/live?port=1935&app=hls&stream=b">
+        <!--               aria-describedby="playVideo" value="https://www.qinziheng.com/liver_demo.flv">-->
+        <div class="input-group-append">
+          <button class="btn btn-primary" onclick="playVideoFlv()">播放</button>
+        </div>
+      </div>
+
+      <!--mp4-->
+      <div class="input-group  mt-2">
+        <div class="input-group-prepend">
+          <span class="input-group-text">MP4</span>
+        </div>
+        <input id="video_url_mp4" type="text" class="form-control" placeholder="video url" aria-label="video url"
+               aria-describedby="playVideo" value="/public/bdaq.mp4">
+        <div class="input-group-append">
+          <button class="btn btn-primary" onclick="playVideoMp4()">播放</button>
+        </div>
+      </div>
+
+    </div>
+    <!--播放区域-->
+    <div class="mt-3 mb-5">
+      <div id="video" class="w-100 h-50"></div>
+    </div>
+
+    <!--介绍-->
+    <div>
+      <table class="table table-bordered bg-white">
+        <thead>
+        <tr class="align-content-center">
+          <th style="width: 10%">文件格式</th>
+          <th class="text-center">介绍</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td>M3U8</td>
+          <td>
+            <p>M3U8文件是指UTF-8编码格式的M3U文件。M3U文件是记录了一个索引纯文本文件，打开它时播放软件并不是播放它，而是根据它的索引找到对应的音视频文件的网络地址进行在线播放。</p>
+            <p>M3U是一种播放多媒体列表的文件格式，它的设计初衷是为了播放音频文件，比如MP3，但是越来越多的软件现在用来播放视频文件列表，M3U也可以指定在线流媒体音频源。很多播放器和软件都支持M3U文件格式。</p>
+          </td>
+        </tr>
+        <tr>
+          <td>MP4</td>
+          <td>
+            <p>MP4或称MPEG-4第14部分（英语：MPEG-4 Part
+              14）是一种标准的数字多媒体容器格式。MPEG-4第14部分的扩展名为.mp4，以存储数字音频及数字视频为主，但也可以存储字幕和静止图像。因其可容纳支持比特流的視频流（如高级視频编码），MP4可以在网络传输时使用流式传输。</p>
+            <p>
+              虽然携带式媒体播放器有时会被称作"MP4播放器"，但并不仅限于播放MP4格式的影片，有些也可以播放AMV、MKV或其他影帧式扩展名为.flv或.f4v并同样基于ISO基础媒体文件格式（MPEG-4第12部分）的Flash視频格式与MPEG-4第14部分极为相似，多数情况下直接变更扩展名为.mp4也能够正常播放</p>
+          </td>
+        </tr>
+        <tr>
+          <td>RTMP</td>
+          <td>
+            <p>RTMP是Real Time Messaging
+              Protocol（实时消息传输协议）的首字母缩写。该协议基于TCP，是一个协议族，包括RTMP基本协议及RTMPT/RTMPS/RTMPE等多种变种。RTMP是一种设计用来进行实时数据通信的网络协议，主要用来在Flash/AIR平台和支持RTMP协议的流媒体/交互服务器之间进行音视频和数据通信。支持该协议的软件包括Adobe
+              Media Server/Ultrant Media Server/red5等。</p>
+          </td>
+        </tr>
+        <tr>
+          <td>HTTP-FLV</td>
+          <td>
+            <p>FLV (Flash Video) 是 Adobe 公司推出的另一种视频格式，是一种在网络上传输的流媒体数据存储容器格式。其格式相对简单轻量，不需要很大的媒体头部信息。整个 FLV 由 The FLV
+              Header, The FLV Body 以及其它 Tag 组成。因此加载速度极快。采用 FLV 格式封装的文件后缀为 .flv。</p>
+          </td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<footer class="pt-3 pb-3 mt-5 bg-white">
+  <div class="container text-center">
+    <span>有视频播放不了,欢迎提出. <a href="https://github.com/meetpasser/webplayer/issues">反馈问题</a></span>
+  </div>
+</footer>
+
+<script>
+
+    //初始化播放器
+    var videoObject = {
+        container: '#video', //容器的ID或className
+        variable: 'player',//播放函数名称
+        poster: './public/img/poster.jpg',//封面图片
+        video: "http://img.ksbbs.com/asset/Mon_1703/05cacb4e02f9d9e.mp4",
+    };
+    var player = new ckplayer(videoObject);
+
+    function changeVideo(videoUrl) {
+        if (player == null) {
+            return;
+        }
+
+        var newVideoObject = {
+            container: '#video', //容器的ID
+            variable: 'player',
+            autoplay: true, //是否自动播放
+            video: videoUrl
+        };
+
+        //判断是需要重新加载播放器还是直接换新地址
+        if (player.playerType == 'html5video') {
+            if (player.getFileExt(videoUrl) == '.flv' || player.getFileExt(videoUrl) == '.m3u8' || player.getFileExt(videoUrl) == '.f4v' || videoUrl.substr(0, 4) == 'rtmp') {
+                player.removeChild();
+
+                player = null;
+                player = new ckplayer();
+                player.embed(newVideoObject);
+            } else {
+                player.newVideo(newVideoObject);
+            }
+        } else {
+            if (player.getFileExt(videoUrl) == '.mp4' || player.getFileExt(videoUrl) == '.webm' || player.getFileExt(videoUrl) == '.ogg') {
+                player = null;
+                player = new ckplayer();
+                player.embed(newVideoObject);
+            } else {
+                player.newVideo(newVideoObject);
+            }
+        }
+    }
+
+    function playVideoMp4() {
+        var videoUrl = document.getElementById('video_url_mp4').value;
+        changeVideo(videoUrl);
+    }
+
+    function playVideoM3u8() {
+        var videoUrl = document.getElementById('video_url_m3u8').value;
+        changeVideo(videoUrl);
+    }
+
+    function playVideoRtmp() {
+        var videoUrl = document.getElementById('video_url_rtmp').value;
+        changeVideo(videoUrl);
+    }
+
+    function playVideoFlv() {
+        var videoUrl = document.getElementById('video_url_flv').value;
+        changeVideo(videoUrl);
+    }
+</script>
+
+</body>
+</html>
