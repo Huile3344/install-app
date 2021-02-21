@@ -8,7 +8,7 @@ services:
   minio1:
     image: minio/minio
     hostname: minio1
-    command: server http://minio{1...2}/data{1...4}
+    command: server http://minio{1...2}/data
     environment:
     - MINIO_ROOT_USER=minioadmin
     - MINIO_ROOT_PASSWORD=minioadmin
@@ -16,10 +16,7 @@ services:
 #      - secret_key
 #      - access_key
     volumes:
-    - /opt/minio/minio1/data1:/data1
-    - /opt/minio/minio1/data2:/data2
-    - /opt/minio/minio1/data3:/data3
-    - /opt/minio/minio1/data4:/data4
+    - /opt/minio/minio1/data:/data
     ports:
     - 9000:9000
     networks:
@@ -42,7 +39,7 @@ services:
   minio2:
     image: minio/minio
     hostname: minio2
-    command: server http://minio{1...2}/data{1...4}
+    command: server http://minio{1...2}/data
     environment:
     - MINIO_ROOT_USER=minioadmin
     - MINIO_ROOT_PASSWORD=minioadmin
@@ -50,10 +47,7 @@ services:
 #      - secret_key
 #      - access_key
     volumes:
-    - /opt/minio/minio2/data1:/data1
-    - /opt/minio/minio2/data2:/data2
-    - /opt/minio/minio2/data3:/data3
-    - /opt/minio/minio2/data4:/data4
+    - /opt/minio/minio2/data:/data
     ports:
     - 9002:9000
     networks:
