@@ -5,30 +5,76 @@ networks:
     external: true
 
 services:
-  minio:
+  minio1:
     image: minio/minio
-    command: server /data{1...4}
+    hostname: minio1
+    command: server http://minio{1...2}/data{1...4}
     environment:
     - MINIO_ROOT_USER=minioadmin
     - MINIO_ROOT_PASSWORD=minioadmin
+#    secrets:
+#      - secret_key
+#      - access_key
     volumes:
-    - /opt/minio/data:/data
-    - /opt/minio/data2:/data2
-    - /opt/minio/data3:/data3
-    - /opt/minio/data4:/data4
+    - /opt/minio/minio1/data1:/data1
+    - /opt/minio/minio1/data2:/data2
+    - /opt/minio/minio1/data3:/data3
+    - /opt/minio/minio1/data4:/data4
     ports:
     - 9000:9000
     networks:
     - sm-net
     deploy:
+      restart_policy:
+        delay: 10s
+        max_attempts: 10
+        window: 60s
       mode: replicated
-      replicas: 1
-#      resources:
-#        limits:
-#          memory: 1g
 #      placement:
 #        constraints:
-#        - node.labels.rabbit1 == 1
+#        - node.labels.minio1 == true
 #        - node.role == manager
-
-
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+  minio2:
+    image: minio/minio
+    hostname: minio2
+    command: server http://minio{1...2}/data{1...4}
+    environment:
+    - MINIO_ROOT_USER=minioadmin
+    - MINIO_ROOT_PASSWORD=minioadmin
+#    secrets:
+#      - secret_key
+#      - access_key
+    volumes:
+    - /opt/minio/minio2/data1:/data1
+    - /opt/minio/minio2/data2:/data2
+    - /opt/minio/minio2/data3:/data3
+    - /opt/minio/minio2/data4:/data4
+    ports:
+    - 9002:9000
+    networks:
+    - sm-net
+    deploy:
+      restart_policy:
+        delay: 10s
+        max_attempts: 10
+        window: 60s
+      mode: replicated
+#      placement:
+#        constraints:
+#        - node.labels.minio2 == true
+#        - node.role == manager
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+#secrets:
+#  secret_key:
+#    external: true
+#  access_key:
+#    external: true
