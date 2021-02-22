@@ -57,7 +57,7 @@
         var videoElement = document.getElementById('videoElement');
         var flvPlayer = flvjs.createPlayer({
           type: 'flv',
-          url: 'http://172.24.0.5:8088/live?port=1935&app=hls&stream=robot7-210'
+          url: 'http://192.168.0.6:8088/live?port=1935&app=hls&stream=video'
         });
         flvPlayer.attachMediaElement(videoElement);
         flvPlayer.load();
