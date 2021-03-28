@@ -35,7 +35,7 @@ grub2-editenv list
 
 ### 安装新内核，若需要
 #### 安装ELRepo
-yum install https://www.elrepo.org/elrepo-release-7.el7.elrepo.noarch.rpm
+yum install -y https://www.elrepo.org/elrepo-release-7.el7.elrepo.noarch.rpm
 #### 升级Kernel，在 ELRepo 中有两个内核选项，一个是 kernel-lt(长期支持版本)，一个是 kernel-ml(主线最新版本)，采用长期支持版本(kernel-lt)，更稳定一些
 yum --enablerepo=elrepo-kernel install -y kernel-lt
 
