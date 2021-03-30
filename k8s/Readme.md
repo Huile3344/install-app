@@ -4,6 +4,26 @@
 
 ## k8s 安装前的一些初始化操作
 
+### 检查所需端口
+| 协议 |	方向 | 端口范围 | 作用 | 使用者 |
+| --- | --- | --- | --- | --- |
+| TCP |	入站 | 6443 | Kubernetes API 服务器 | 所有组件 |
+| TCP | 入站 | 2379-2380 | etcd 服务器客户端 API | kube-apiserver, etcd |
+| TCP | 入站 | 10250 | Kubelet API	| Self, Control plane |
+| TCP | 入站 | 10251 | kube-scheduler | Self |
+| TCP | 入站 | 10252 | kube-controller-manager | Self |
+
+执行命令查询端口占用情况：
+```
+netstat -tunpl | grep 6443
+netstat -tunpl | grep 2379
+netstat -tunpl | grep 2380
+netstat -tunpl | grep 10250
+netstat -tunpl | grep 10251
+netstat -tunpl | grep 10252
+```
+若端口被占用，需要释放端口
+
 ### 安装一些依赖包，方便后面使用
 可按需调整安装的依赖包
 ```shell
@@ -234,9 +254,77 @@ kubelet --version
 kubectl version --client
 kubeadm version
 
-# kubectl命令自动补全
+# kubeadm 命令自动补全
+source <(kubeadm completion bash)
+echo "source <(kubeadm completion bash)" >> ~/.bashrc
+
+# kubectl 命令自动补全
 source <(kubectl completion bash)
 echo "source <(kubectl completion bash)" >> ~/.bashrc
+```
+### 开机启动 kubelet
+```
+systemctl enable kubelet
+systemctl daemon-reload
+systemctl start docker
+```
+
+## 安装 kubernetes 需要的 container runtime
+参考 kubernetes 容器运行时安装: https://kubernetes.io/zh/docs/setup/production-environment/container-runtimes/
+参考 docker 安装 https://docs.docker.com/engine/install/centos/#install-using-the-repository
+### 卸载旧版 docker
+```
+sudo yum remove docker \
+                  docker-client \
+                  docker-client-latest \
+                  docker-common \
+                  docker-latest \
+                  docker-latest-logrotate \
+                  docker-logrotate \
+                  docker-engine
+```
+### 使用存储库安装
+#### 设置存储库
+```
+sudo yum install -y yum-utils
+sudo yum-config-manager \
+    --add-repo \
+    https://download.docker.com/linux/centos/docker-ce.repo
+```
+### 安装 docker
+```
+sudo yum install docker-ce docker-ce-cli containerd.io
+```
+### 设置开机启动docker，启动并验证docker
+```
+sudo systemctl enable docker
+sudo systemctl start docker
+sudo docker run hello-world
+```
+### 修改 docker 配置
+```
+sudo mkdir /etc/docker
+cat <<EOF | sudo tee /etc/docker/daemon.json
+{
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "oom-score-adjust": -1000,
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m",
+    "max-file": "3"
+  },
+  "max-concurrent-downloads": 10,
+  "max-concurrent-uploads": 10,
+  "registry-mirrors": ["https://c174fa3u.mirror.aliyuncs.com"],
+  "storage-driver": "overlay2"
+}
+EOF
+```
+### 重新加载配置，重启 docker 和 kubelet
+```
+systemctl daemon-reload
+systemctl restart docker
+systemctl restart kubelet
 ```
 
 ## 获取 kubernetes 初始化需要的镜像列表
@@ -320,5 +408,147 @@ docker rmi registry.cn-hangzhou.aliyuncs.com/google_containers/etcd:3.4.13-0
 docker rmi registry.cn-hangzhou.aliyuncs.com/google_containers/coredns:1.7.0
 ```
 
+## kubernetes 初始化安装
+
+### 获取 kubeadm 初始化安装默认配置文件
+```
+kubeadm config print init-defaults > kubeadm-config.yml
+```
+
+### 修改 kubeadm 初始化yml
+修改yml部分原有配置，
+```
+localAPIEndpoint:
+  # 修改为 k8s 节点IP
+  advertiseAddress: 192.168.0.6
+# 修改为安装的 k8s 版本
+kubernetesVersion: v1.20.5
+networking:
+  # 添加 Pod 网段
+  podSubnet: 10.244.0.0/16
+  serviceSubnet: 10.96.0.0/12
+```
+1.19 及之前的版本开启 IPVS 方式，并在yml后面追加以下内容
+```
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+featureGates:
+  SupportIPVSProxyMode: true
+mode: ipvs
+```
+对于 1.20 版本开启 IPVS 方式。参考官网 https://github.com/kubernetes/kubernetes/blob/master/pkg/proxy/ipvs/README.md
+```
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+mode: ipvs
+```
+
+### kubeadm init 安装 k8s master
+```
+kubeadm init --config=kubeadm-config.yml | tee kubeadm-init.log
+```
+
+### 开启 kubectl 访问 k8s
+#### 非 root 用户可以运行 kubectl，请运行以下命令
+```
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+```
+#### root 用户，则可以运行：
+```
 echo "export KUBECONFIG=/etc/kubernetes/admin.conf" >> ~/.bash_profile
 source ~/.bash_profile
+```
+#### 获取 k8s 集群阶段状态
+漏执行上诉脚本会出现如下错误提醒
+```
+[root@centos ~]# kubectl get nodes
+The connection to the server localhost:8080 was refused - did you specify the right host or port?
+```
+正确执行返回结果应该如下
+```
+[root@centos install]# kubectl get nodes
+NAME     STATUS     ROLES                  AGE    VERSION
+centos   NotReady   control-plane,master   149m   v1.20.5
+```
+
+### 查看 kubelet 默认使用的 cgroupDriver
+推荐使用 systemd
+```
+cat /var/lib/kubelet/config.yaml
+```
+
+### 控制平面节点隔离
+默认情况下，出于安全原因，你的集群不会在控制平面节点上调度 Pod。 如果你希望能够在控制平面节点上调度 Pod， 例如用于开发的单机 Kubernetes 集群，请运行：
+```
+kubectl taint nodes --all node-role.kubernetes.io/master-
+```
+
+
+## 安装扩展（Addons）
+参考 安装扩展（Addons） https://kubernetes.io/zh/docs/concepts/cluster-administration/addons/
+
+部署 pod network 前节点状态: NotReady
+```
+[root@centos install]# kubectl get nodes
+NAME     STATUS     ROLES                  AGE    VERSION
+centos   NotReady   control-plane,master   165m   v1.20.5
+```
+可按需部署对应的网络和网络策略，以下以 flannel 为示例：
+```
+# 若执行以下脚本无法下载，可直接访问：https://github.com/flannel-io/flannel/blob/master/Documentation/kube-flannel.yml，手动拷贝获取
+curl -LO "https://github.com/flannel-io/flannel/blob/273b36ca57dca3eebcc813ddca7d917955375054/Documentation/kube-flannel.yml"
+kubectl apply -f kube-flannel.yml
+```
+部署 pod network 成功后节点状态: Ready
+```
+[root@centos install]# kubectl get nodes
+NAME     STATUS   ROLES                  AGE    VERSION
+centos   Ready    control-plane,master   168m   v1.20.5
+```
+
+## 至此单机 k8s 安装完成
+
+## 加入节点 
+要将新节点添加到集群，请对每台计算机执行以下操作：
+```
+kubeadm join --token <token> <control-plane-host>:<control-plane-port> --discovery-token-ca-cert-hash sha256:<hash>
+```
+如果没有令牌，可以通过在控制平面节点上运行以下命令来获取令牌：
+```
+kubeadm token list
+```
+默认情况下，令牌会在24小时后过期。如果要在当前令牌过期后将节点加入集群， 则可以通过在控制平面节点上运行以下命令来创建新令牌：
+```
+kubeadm token create
+```
+如果没有 --discovery-token-ca-cert-hash 的值，则可以通过在控制平面节点上执行以下命令链来获取它：
+```
+openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | \
+   openssl dgst -sha256 -hex | sed 's/^.* //'
+```
+
+## 删除节点 
+使用适当的凭证与控制平面节点通信，运行：
+```
+kubectl drain <node name> --delete-local-data --force --ignore-daemonsets
+```
+在删除节点之前，请重置 kubeadm 安装的状态：
+```
+kubeadm reset
+```
+重置过程不会重置或清除 iptables 规则或 IPVS 表。如果你希望重置 iptables，则必须手动进行：
+```
+iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X
+```
+如果要重置 IPVS 表，则必须运行以下命令：
+```
+ipvsadm -C
+```
+现在删除节点：
+```
+kubectl delete node <node name>
+```
