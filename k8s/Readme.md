@@ -245,6 +245,11 @@ RELEASE_VERSION="v0.4.0"
 #mkdir -p /etc/systemd/system/kubelet.service.d
 #curl -LO "https://raw.githubusercontent.com/kubernetes/release/${RELEASE_VERSION}/cmd/kubepkg/templates/latest/deb/kubeadm/10-kubeadm.conf"
 #sed -i "s:/usr/bin:${DOWNLOAD_DIR}:g" 10-kubeadm.conf | tee /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+
+# 若上述方式无法下载文件，可将 install 目录下的 10-kubeadm.conf 拷贝过来使用（yum 安装 kubelet 时生成的文件）
+## 特别提醒：若是没有该文件，kubelet 可能无法作为后台服务运行
+mkdir -p /etc/systemd/system/kubelet.service.d
+cp 10-kubeadm.conf /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
 ```
 
 ## 检测 kubelet kubeadm kubectl 版本
