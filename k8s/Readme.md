@@ -266,7 +266,7 @@ echo "source <(kubectl completion bash)" >> ~/.bashrc
 ```
 systemctl enable kubelet
 systemctl daemon-reload
-systemctl start docker
+systemctl start kubelet
 ```
 
 ## 安装 kubernetes 需要的 container runtime
@@ -293,7 +293,7 @@ sudo yum-config-manager \
 ```
 ### 安装 docker
 ```
-sudo yum install docker-ce docker-ce-cli containerd.io
+sudo yum install -y docker-ce docker-ce-cli containerd.io
 ```
 ### 设置开机启动docker，启动并验证docker
 ```
@@ -428,7 +428,9 @@ networking:
   podSubnet: 10.244.0.0/16
   serviceSubnet: 10.96.0.0/12
 ```
-1.19 及之前的版本开启 IPVS 方式，并在yml后面追加以下内容
+
+#### 1.19 及之前的版本开启 IPVS 方式
+在yml后面追加以下内容
 ```
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
@@ -437,12 +439,34 @@ featureGates:
   SupportIPVSProxyMode: true
 mode: ipvs
 ```
-对于 1.20 版本开启 IPVS 方式。参考官网 https://github.com/kubernetes/kubernetes/blob/master/pkg/proxy/ipvs/README.md
+
+#### 对于 1.20 版本开启 IPVS 方式
+参考官网 https://github.com/kubernetes/kubernetes/blob/master/pkg/proxy/ipvs/README.md
+
+在yml后面追加以下内容
 ```
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 mode: ipvs
+```
+
+#### 针对已经运行的 k8s 修改 kube-proxy 开启 IPVS 方式
+关于 KubeProxyConfiguration 的简易参数模板可通过以下命名查看运行中的 k8s kube-proxy 配置，或者查看已导出的 kube-proxy-config.yml 文件
+```
+kubectl -n kube-system get configmaps kube-proxy -o yaml > kube-proxy-config.yml
+```
+对于已经在运行中的 k8s 可通过在线修改 kube-proxy 的 configmap 来调整
+```
+kubectl -n kube-system edit cm kube-proxy
+```
+再讲所有kube-proxy进行重启,查看pod运行情况
+```
+kubectl -n kube-system get pod
+```
+查看ipvs模式是否启用成功
+```
+ipvsadm -Ln
 ```
 
 ### kubeadm init 安装 k8s master
