@@ -331,6 +331,11 @@ systemctl daemon-reload
 systemctl restart docker
 systemctl restart kubelet
 ```
+### 查看 docker 当前配置
+查看并核对docker的配置信息是否正确
+```
+docker info
+```
 
 ## 获取 kubernetes 初始化需要的镜像列表
  
