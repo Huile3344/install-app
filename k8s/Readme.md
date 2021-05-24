@@ -586,3 +586,136 @@ ipvsadm -C
 ```
 kubectl delete node <node name>
 ```
+
+## 安全 -- k8s 认证鉴权准入控制
+
+### 机制说明
+Kubernetes 作为一个分布式集群管理工具，保证集群的安全性是其一个重要的任务。
+api server 是集群内部各个组件通信的中介，也是外部控制的入口。所以 Kubernetes 的
+安全机制基本就是围绕保护 api server 来设计的。 Kubernetes 使用了认证（Authendication）、
+鉴权（Authorization）、准入控制（Admission Control） 三步来保证 api server 的安全
+
+### 认证（Authendication）
+k8s的有以下三种认证方式
+- Http Token 认证：通过一个Token来识别合法用户
+- Http Base 认证：通过 用户名+密码 的方式认证
+- 最严格的 HTTPS 证书认证：基于CA根证书签名的客户端身份认证方式
+
+#### 证书颁发
+- 手动签发：通过k8s集群的根 ca 进行签发 HTTPS 证书
+- 自动签发：kubelet 首次访问 api server 时， 使用token认证，通过后， Controller Manager 会为
+kubelet 生成一个证书，以后的访问都是用证书做认证了
+
+#### kubeconfig
+kubeconfig 文件包含集群参数（CA证书、api server地址)，客户端参数（上面生成的证书和私钥），集群 context 信息
+（集群名称、用户名），Kubernetes 组件通过启动时指定不同的 kubeconfig 文件可以切换到不同的集群
+
+### PKI证书和要求
+参考官网：[PKI证书和要求](https://kubernetes.io/zh/docs/setup/best-practices/certificates/)
+
+####证书存放的位置 
+    
+如果你是通过 kubeadm 安装的 Kubernetes，所有证书都存放在 `/etc/kubernetes/pki` 目录下。
+
+
+#### 为用户帐户配置证书 
+```
+KUBECONFIG=<filename> 
+# 设置集群参数
+kubectl config set-cluster default-cluster --server=https://<host ip>:6443 --certificate-authority <path-to-kubernetes-ca> --embed-certs
+# 设置客户端认证参数 
+kubectl config set-credentials <credential-name> --client-key <path-to-key>.pem --client-certificate <path-to-cert>.pem --embed-certs
+# 设置上下文参数
+kubectl config set-context default-system --cluster default-cluster --user <credential-name>
+# 设置默认上下文
+kubectl config use-context default-system
+```
+
+### 鉴权（Authorization）
+认证过程只是确认通信的双方都是可信的，可以互相通信。而鉴权是确定请求方有哪些资源的权限。
+api server 目前支持一下几种鉴权策略（通过 api server 的启动参数“--authorization-mode”设置）
+- AlwaysDeny: 表示拒绝所有的请求，一般用于测试
+- AlwaysAllow: 允许接收所有请求，如果集群不需要授权流程，则可以采用该策略
+- ABAC(Attribute-Based Access Control): 基于属性的访问控制，表示使用用户配置的授权规则对用户请求
+进行匹配和控制
+- RBAC(Role-Based Access Control): 基于角色的访问控制，现行默认规则
+
+#### RBAC 授权模式
+在 Kubernetes 1.5 中引入，现行版本成为默认标准。相对其他访问控制方式，有以下优势：
+- 对集群中的资源和非资源均拥有完整的覆盖
+- 整个RBAC完全由几个API对象完成，同其他API对象一样，可以用kubectl或API进行操作
+- 可以在运行时进行调整，无需重启api server
+
+#### RBAC 的 API 资源对象说明
+RBAC 引入了4个新的顶级资源对象: Role、ClusterRole、RoleBinding、ClusterRoleBinding，4中对象类型
+均可通过kubectl与api操作。
+
+需要注意的是Kubernetes并不会提供用户管理，那么 User, Group, ServiceAccount 指定的用户又是从哪里来的呢？
+Kubernetes组件(kubectl, kube-proxy)或是其他自定义的用户在向CA申请证书时，需要提供给一个证书请求文件
+```
+{
+    "CN": "admin",
+    "hosts": [],
+    "key": {
+        "algo": "rsa",
+        "size": 2048
+    },
+    "names": [
+        {
+            "C": "CN",
+            "ST": "Guangdong",
+            "L": "Guangzhou",
+            "O": "system:masters",
+            "OU": "System"
+        }
+    ]
+}
+
+```
+api server 会把客户端证书的 `CN` 字段作为 User，把 `names.O` 字段作为 Group
+
+kubectl 使用 TLS BootStaping 认证是， api server 可以使用 Bootstrap Tokens 或者
+Token authorization file 验证 = token，无论哪一种，Kubernetes都会为token绑定一个默认的User和Group
+
+Pod 使用 ServiceAccount 认证时，service-account-token 中的 JWT 会保存 User 信息
+有了用户信息，再创建一个角色/角色绑定(集群角色/集群角色绑定)资源对象，就可以完成权限绑定了
+
+
+
+
+## k8s 的 master 更换 IP
+参考：[k8s的master更换ip](https://www.cnblogs.com/chaojiyingxiong/p/12106590.html)
+已制作成脚本：[k8s辅助脚本](./shell/k8s-assist.sh) 的操作 *change-master-ip*
+
+k8s的master更换ip后，通信问题出现了问题，我们只需要通过kubeadm init phase命令，重新生成config文件和签名文件就可以了。操作如下：
+ 
+- 切换到/etc/kubernetes/manifests， 将etcd.yaml  kube-apiserver.yaml里的ip地址替换为新的ip
+  ```
+  vim /etc/kubernetes/manifests/etcd.yaml
+  vim /etc/kubernetes/manifests/kube-apiserver.yaml
+  ```
+- 生成新的config文件
+  ```
+  # 需要先移除该文件，否则k8s无法新生成
+  mv /etc/kubernetes/admin.conf /etc/kubernetes/admin.conf.bak
+  kubeadm init phase kubeconfig admin --apiserver-advertise-address <新的ip>
+  ```
+- 删除老证书，生成新证书
+  ```
+  # 需要先移除证书文件，否则k8s无法新生成
+  mv /etc/kubernetes/pki/apiserver.key /etc/kubernetes/pki/apiserver.key.bak
+  mv /etc/kubernetes/pki/apiserver.crt /etc/kubernetes/pki/apiserver.crt.bak
+  kubeadm init phase certs apiserver  --apiserver-advertise-address <新的ip>
+  ```
+- 重启 docker 和 kubelet
+  ```
+  service docker restart && service kubelet restart
+  ```
+- 将配置文件config输出
+  ```
+  kubectl get nodes --kubeconfig=admin.conf  #  此时已经是通信成功了
+  ``` 
+- 将kubeconfig默认配置文件替换为admin.conf，这样就可以直接使用kubectl get nodes
+  ```
+  mv admin.conf ~/.kube/config
+  ```   
