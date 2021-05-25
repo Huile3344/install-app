@@ -672,7 +672,8 @@ Kubernetes组件(kubectl, kube-proxy)或是其他自定义的用户在向CA申�
 }
 
 ```
-api server 会把客户端证书的 `CN` 字段作为 User，把 `names.O` 字段作为 Group
+api server 会把客户端证书的 `CN` 字段作为 User，把 `names.O` 字段作为 Group。
+前缀是 `system:` 的 User 和 Group 是k8s系统保留的，确保普通用户不会使用这个前缀格式
 
 kubectl 使用 TLS BootStaping 认证是， api server 可以使用 Bootstrap Tokens 或者
 Token authorization file 验证 = token，无论哪一种，Kubernetes都会为token绑定一个默认的User和Group
@@ -680,9 +681,128 @@ Token authorization file 验证 = token，无论哪一种，Kubernetes都会为t
 Pod 使用 ServiceAccount 认证时，service-account-token 中的 JWT 会保存 User 信息
 有了用户信息，再创建一个角色/角色绑定(集群角色/集群角色绑定)资源对象，就可以完成权限绑定了
 
-
-
-
+### 实践: 创建一个用户只能管理dev命名空间
+- 先在linux系统创建组(`k8s`)和用户(`devuser`) 
+  ```
+  UNAME=devuser
+  groupadd k8s
+  useradd -g k8s $UNAME
+  ```
+- 配置用户(`devuser`)访问k8s集群的证书信息
+  ```
+  cat <<EOF > $UNAME-csr.json
+  {
+      "CN": "$UNAME",
+      "hosts": [],
+      "key": {
+          "algo": "rsa",
+          "size": 2048
+      },
+      "names": [
+          {
+              "C": "CN",
+              "ST": "Guangdong",
+              "L": "Guangzhou",
+              "O": "k8s",
+              "OU": "System"
+          }
+      ]
+  }
+  EOF
+  ```
+- 下载证书生成工具 `cfssl` 和证书验证工具 `openssl`
+  ```
+  yum install -y openssl
+  DIR=/opt/cfssl
+  if [ ! -d $DIR ]; then
+    mkdir -pv $DIR
+    cd $DIR
+    # 可以去官网下载最新版本 https://pkg.cfssl.org
+    wget https://pkg.cfssl.org/R1.2/cfssl_linux-amd64 -O cfssl
+    chmod +x cfssl
+    wget https://pkg.cfssl.org/R1.2/cfssljson_linux-amd64 -O cfssljson
+    chmod +x cfssljson
+    wget https://pkg.cfssl.org/R1.2/cfssl-certinfo_linux-amd64 -O cfssl-certinfo
+    chmod +x cfssl-certinfo
+    cp {cfssl,cfssljson,cfssl-certinfo} /usr/bin/
+    # 生成默认模板文件
+    cfssl print-defaults config > config.json
+    cfssl print-defaults csr > csr.json
+  else
+    echo "$DIR exists, cfssl has already install"
+  fi
+  ```
+- 生成用户证书 `<用户名>.pem` 和  `<用户名>-key.pem`，并验证证书
+  ```
+  cfssl gencert -ca=ca.crt -ca-key=ca.key -profile=kubernetes $UNAME-csr.json | cfssljson -bare $UNAME
+  if [ 0 -eq $? ]; then
+    echo "verify data $UNAME.pem"
+    openssl x509 -in $UNAME.pem -text -noout
+    mv $UNAME-key.pem $UNAME.key
+    mv $UNAME.pem $UNAME.crt
+  fi
+  ```
+- 创建 dev 命名空间
+  ```
+  kubectl create namespace dev
+  ```
+- 设置用户访问集群相关信息
+  ```
+  KUBE_APISERVER=https://<host ip>:6443
+  KUBECONFIG=devuser.kubeconfig 
+  # 设置集群参数
+  kubectl config set-cluster kubernetes --server=$KUBE_APISERVER --certificate-authority /etc/kubernetes/pki/ca.crt --embed-certs
+  # 设置客户端认证参数 
+  kubectl config set-credentials $UNAME --client-key $UNAME.key --client-certificate $UNAME.crt --embed-certs
+  # 设置上下文参数
+  kubectl config set-context kubernetes --cluster kubernetes --user $UNAME --namespace dev
+  # 设置默认上下文
+  kubectl config use-context kubernetes
+  
+  mkdir -pv /home/$UNAME/.kube
+  cp $KUBECONFIG /home/$UNAME/.kube/config
+  ```
+- 创建 dev 命名空间的 pods-reader 角色
+  ```
+  kubectl create role pods-reader --verb=get,list,watch --resource=pods --namespace=dev
+  
+  # 或使用如下yml方式
+  cat <<EOF > pods-reader.yml
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: Role    #资源类型
+  metadata:
+    namespace: dev
+    name: pods-reader
+  rules:
+  - apiGroups: [""]   #目标api群组
+    resources: ["pods"]  #目标资源
+    verbs: ["get","list","watch"]     #操作权限
+  EOF
+  kubectl create -f pods-reader.yml
+  ```
+- 给用户绑定角色 pods-reader
+  ```
+  kubectl create rolebinding $UNAME-pods-reader-binding --role=pods-reader --user=$UNAME --namespace=dev
+  
+  # 或使用如下yml方式
+  cat <<EOF > devuser-pods-reader-banding.yml
+  apiVersion: rbac.authorization.k8s.io/v1
+  kind: RoleBinding    #资源类型
+  metadata:
+    namespace: dev
+    name: devuser-pods-reader-banding
+  roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: Role
+    name: pods-reader
+  subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: User
+    name: devuser
+  EOF
+  kubectl create -f devuser-pods-reader-banding.yml
+  ```
+  
 ## k8s 的 master 更换 IP
 参考：[k8s的master更换ip](https://www.cnblogs.com/chaojiyingxiong/p/12106590.html)
 已制作成脚本：[k8s辅助脚本](./shell/k8s-assist.sh) 的操作 *change-master-ip*
