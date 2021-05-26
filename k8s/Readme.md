@@ -44,7 +44,7 @@ setenforce 0 && sed -i 's/^SELINUX=.*/SELINUX=disabled/' /etc/selinux/config
 
 ### 升级系统内核版本
 **注意：** CentOS 7.x 系统自带的 3.10.x 内核存在一些 Bugs，导致运行的 Docker、Kubernetes 不稳定.
- 
+
 -  查看当前系统使用的内核
     ```
     [root@centos ~]# uname -a
@@ -66,7 +66,7 @@ setenforce 0 && sed -i 's/^SELINUX=.*/SELINUX=disabled/' /etc/selinux/config
     yum --enablerepo=elrepo-kernel install -y kernel-lt
     ```
 - 罗列所有内核，确认新内核已经安装
- 
+
     示例如：CentOS Linux (5.4.108-1.el7.elrepo.x86_64) 7 (Core)
     ```
     [root@centos ~]# grub2-editenv list
@@ -338,7 +338,7 @@ docker info
 ```
 
 ## 获取 kubernetes 初始化需要的镜像列表
- 
+
 可通过 `kubeadm config images list` 查看kubernetes 初始化需要的镜像
 
 使用命令 `kubeadm config images pull` 从Google镜像仓库拉取镜像（需要翻墙，国内一般无法使用此方法）
@@ -376,7 +376,7 @@ docker pull googlecontainersmirrors/kube-apiserver:v1.17.3
 ```
 
 #### 七牛云镜像仓库
-     
+
 可以拉取quay.io镜像
 ```
 # 只需将 quay.io 改为 quay-mirror.qiniu.com
@@ -496,7 +496,7 @@ sudo chown $(id -u):$(id -g) $HOME/.kube/config
 echo "export KUBECONFIG=/etc/kubernetes/admin.conf" >> ~/.bash_profile
 source ~/.bash_profile
 ```
-#### 获取 k8s 集群阶段状态
+#### 获取 k8s 集群节点状态
 漏执行上诉脚本会出现如下错误提醒
 ```
 [root@centos ~]# kubectl get nodes
@@ -544,6 +544,82 @@ NAME     STATUS   ROLES                  AGE    VERSION
 centos   Ready    control-plane,master   168m   v1.20.5
 ```
 
+## 安装 Dashboard
+
+### 获取 `recommended.yaml` 文件
+
+去Dashboard 的 GitHub 网址获取最新的配置文件[recommended.yaml](https://github.com/kubernetes/dashboard/blob/master/aio/deploy/recommended.yaml)，并保存到本地并执行
+
+```
+# 或直接使用 wget 命令获取，需要翻墙
+wget https://raw.githubusercontent.com/kubernetes/dashboard/master/aio/deploy/recommended.yaml
+```
+
+### 修改 `recommended.yaml` 文件
+
+让其 Service 暴露对外接口（或者使用ingress的方式）。
+
+原始内容：
+
+```
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: kubernetes-dashboard
+  name: kubernetes-dashboard
+  namespace: kubernetes-dashboard
+spec:
+  ports:
+    - port: 443
+      targetPort: 8443
+  selector:
+    k8s-app: kubernetes-dashboard
+```
+
+修改后内容：
+
+```
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    k8s-app: kubernetes-dashboard
+  name: kubernetes-dashboard
+  namespace: kubernetes-dashboard
+spec:
+  type: NodePort #增加
+  ports:
+    - port: 443
+      targetPort: 8443
+  selector:
+    k8s-app: kubernetes-dashboard
+```
+
+### 执行安装 Dashboard
+
+```
+kubectl apply -f recommended.yaml
+```
+
+### 查看 Dashboard 暴露的端口
+
+```
+kubectl get service kubernetes-dashboard -n kubernetes-dashboard
+```
+
+### 查看用户Token
+
+```
+kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep dashboard-admin | awk '{print $1}')
+```
+
+### 打开dashboard
+
+浏览器https://ip:port 选择token方式登录
+
+
+
 ## 至此单机 k8s 安装完成
 
 ## 加入节点 
@@ -586,6 +662,10 @@ ipvsadm -C
 ```
 kubectl delete node <node name>
 ```
+
+
+
+
 
 ## 安全 -- k8s 认证鉴权准入控制
 
@@ -808,7 +888,7 @@ Pod 使用 ServiceAccount 认证时，service-account-token 中的 JWT 会保存
 已制作成脚本：[k8s辅助脚本](./shell/k8s-assist.sh) 的操作 *change-master-ip*
 
 k8s的master更换ip后，通信问题出现了问题，我们只需要通过kubeadm init phase命令，重新生成config文件和签名文件就可以了。操作如下：
- 
+
 - 切换到/etc/kubernetes/manifests， 将etcd.yaml  kube-apiserver.yaml里的ip地址替换为新的ip
   ```
   vim /etc/kubernetes/manifests/etcd.yaml
@@ -834,8 +914,8 @@ k8s的master更换ip后，通信问题出现了问题，我们只需要通过kub
 - 将配置文件config输出
   ```
   kubectl get nodes --kubeconfig=admin.conf  #  此时已经是通信成功了
-  ``` 
+  ```
 - 将kubeconfig默认配置文件替换为admin.conf，这样就可以直接使用kubectl get nodes
   ```
   mv admin.conf ~/.kube/config
-  ```   
+  ```
