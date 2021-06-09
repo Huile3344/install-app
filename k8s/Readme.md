@@ -625,7 +625,7 @@ kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboar
 ## 加入节点 
 要将新节点添加到集群，请对每台计算机执行以下操作：
 ```
-kubeadm join --token <token> <control-plane-host>:<control-plane-port> --discovery-token-ca-cert-hash sha256:<hash>
+kubeadm join <control-plane-host>:<control-plane-port> --token <token> --discovery-token-ca-cert-hash sha256:<hash>
 ```
 如果没有令牌，可以通过在控制平面节点上运行以下命令来获取令牌：
 ```
