@@ -69,7 +69,7 @@ setenforce 0 && sed -i 's/^SELINUX=.*/SELINUX=disabled/' /etc/selinux/config
 
     示例如：CentOS Linux (5.4.108-1.el7.elrepo.x86_64) 7 (Core)
     ```
-    [root@centos ~]# grub2-editenv list
+    [root@centos ~]# cat /boot/grub2/grub.cfg | grep menuentry
     if [ x"${feature_menuentry_id}" = xy ]; then
       menuentry_id_option="--id"
       menuentry_id_option=""
