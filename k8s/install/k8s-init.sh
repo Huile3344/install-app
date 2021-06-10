@@ -50,6 +50,14 @@ menuentry 'CentOS Linux (5.4.108-1.el7.elrepo.x86_64) 7 (Core)' --class centos -
 menuentry 'CentOS Linux (3.10.0-693.el7.x86_64) 7 (Core)' --class centos --class gnu-linux --class gnu --class os --unrestricted $menuentry_id_option 'gnulinux-3.10.0-693.el7.x86_64-advanced-d3b2e9ee-ce17-40cc-8ecc-5e0be5f72414' {
 menuentry 'CentOS Linux (0-rescue-5f1fe186a0214fae8c3b96235d409a29) 7 (Core)' --class centos --class gnu-linux --class gnu --class os --unrestricted $menuentry_id_option 'gnulinux-0-rescue-5f1fe186a0214fae8c3b96235d409a29-advanced-d3b2e9ee-ce17-40cc-8ecc-5e0be5f72414' {
 
+或
+sudo awk -F\' '$1=="menuentry " {print i++ " : " $2}' /etc/grub2.cfg
+# 返回：
+0 : CentOS Linux (5.4.108-1.el7.elrepo.x86_64) 7 (Core)
+1 : CentOS Linux (3.10.0-693.el7.x86_64) 7 (Core)
+2 : CentOS Linux (0-rescue-5f1fe186a0214fae8c3b96235d409a29) 7 (Core)
+
+
 ### 设置开机从新内核启动
 grub2-set-default 'CentOS Linux (5.4.108-1.el7.elrepo.x86_64) 7 (Core)'
 

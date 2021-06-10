@@ -77,6 +77,12 @@ setenforce 0 && sed -i 's/^SELINUX=.*/SELINUX=disabled/' /etc/selinux/config
     menuentry 'CentOS Linux (5.4.108-1.el7.elrepo.x86_64) 7 (Core)' --class centos --class gnu-linux --class gnu --class os --unrestricted $menuentry_id_option 'gnulinux-3.10.0-693.el7.x86_64-advanced-d3b2e9ee-ce17-40cc-8ecc-5e0be5f72414' {
     menuentry 'CentOS Linux (3.10.0-693.el7.x86_64) 7 (Core)' --class centos --class gnu-linux --class gnu --class os --unrestricted $menuentry_id_option 'gnulinux-3.10.0-693.el7.x86_64-advanced-d3b2e9ee-ce17-40cc-8ecc-5e0be5f72414' {
     menuentry 'CentOS Linux (0-rescue-5f1fe186a0214fae8c3b96235d409a29) 7 (Core)' --class centos --class gnu-linux --class gnu --class os --unrestricted $menuentry_id_option 'gnulinux-0-rescue-5f1fe186a0214fae8c3b96235d409a29-advanced-d3b2e9ee-ce17-40cc-8ecc-5e0be5f72414' {
+    
+    # 或使用一下方式替代  
+    [root@centos ~]# sudo awk -F\' '$1=="menuentry " {print i++ " : " $2}' /etc/grub2.cfg
+    0 : CentOS Linux (5.4.108-1.el7.elrepo.x86_64) 7 (Core)
+    1 : CentOS Linux (3.10.0-693.el7.x86_64) 7 (Core)
+    2 : CentOS Linux (0-rescue-5f1fe186a0214fae8c3b96235d409a29) 7 (Core)
     ```
 -  设置开机从新内核启动
     ```
@@ -391,31 +397,23 @@ docker pull quay-mirror.qiniu.com/kubernetes-ingress-controller/nginx-ingress-co
 ### 镜像拉取和重命名tag
 ```
 # pull 需要的k8s镜像
-docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/kube-apiserver:v1.20.5
-docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/kube-controller-manager:v1.20.5
-docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/kube-scheduler:v1.20.5
-docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/kube-proxy:v1.20.5
-docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/pause:3.2
-docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/etcd:3.4.13-0
-docker pull registry.cn-hangzhou.aliyuncs.com/google_containers/coredns:1.7.0
+images=(
+kube-apiserver:v1.20.5
+kube-controller-manager:v1.20.5
+kube-scheduler:v1.20.5
+kube-proxy:v1.20.5
+pause:3.4.1
+etcd:3.4.13-0
+coredns:1.7.0
+)
+source=registry.cn-hangzhou.aliyuncs.com/google_containers
+target=k8s.gcr.io
+for image in ${images[@]} ; do
+  echo "docker pull $source/$image"
+  echo "docker tag $source/$image $target/$image"
+  echo "docker rmi $source/$image"
+done
 
-# tag 重命名
-docker tag registry.cn-hangzhou.aliyuncs.com/google_containers/kube-apiserver:v1.20.5 k8s.gcr.io/kube-apiserver:v1.20.5
-docker tag registry.cn-hangzhou.aliyuncs.com/google_containers/kube-controller-manager:v1.20.5 k8s.gcr.io/kube-controller-manager:v1.20.5
-docker tag registry.cn-hangzhou.aliyuncs.com/google_containers/kube-scheduler:v1.20.5 k8s.gcr.io/kube-scheduler:v1.20.5
-docker tag registry.cn-hangzhou.aliyuncs.com/google_containers/kube-proxy:v1.20.5 k8s.gcr.io/kube-proxy:v1.20.5
-docker tag registry.cn-hangzhou.aliyuncs.com/google_containers/pause:3.2 k8s.gcr.io/pause:3.2
-docker tag registry.cn-hangzhou.aliyuncs.com/google_containers/etcd:3.4.13-0 k8s.gcr.io/etcd:3.4.13-0
-docker tag registry.cn-hangzhou.aliyuncs.com/google_containers/coredns:1.7.0 k8s.gcr.io/coredns:1.7.0
-
-# 移除多余的tag
-docker rmi registry.cn-hangzhou.aliyuncs.com/google_containers/kube-apiserver:v1.20.5
-docker rmi registry.cn-hangzhou.aliyuncs.com/google_containers/kube-controller-manager:v1.20.5
-docker rmi registry.cn-hangzhou.aliyuncs.com/google_containers/kube-scheduler:v1.20.5
-docker rmi registry.cn-hangzhou.aliyuncs.com/google_containers/kube-proxy:v1.20.5
-docker rmi registry.cn-hangzhou.aliyuncs.com/google_containers/pause:3.2
-docker rmi registry.cn-hangzhou.aliyuncs.com/google_containers/etcd:3.4.13-0
-docker rmi registry.cn-hangzhou.aliyuncs.com/google_containers/coredns:1.7.0
 ```
 
 ## kubernetes 初始化安装
