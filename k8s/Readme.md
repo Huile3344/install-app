@@ -603,7 +603,19 @@ kubectl apply -f recommended.yaml
 ### 查看 Dashboard 暴露的端口
 
 ```
-kubectl get service kubernetes-dashboard -n kubernetes-dashboard
+kubectl -n kubernetes-dashboard get service kubernetes-dashboard
+```
+
+### 额外创建Dashboard的SA dashboard-admin 管理整个集群
+
+```
+kubectl -n kubernetes-dashboard create serviceaccount dashboard-admin 
+```
+
+### 授权集群角色
+
+```
+kubectl create clusterrolebinding dashboard-admin-crb --clusterrole=cluster-admin --serviceaccount=kubernetes-dashboard:dashboard-admin
 ```
 
 ### 查看用户Token
