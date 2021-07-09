@@ -1,3 +1,12 @@
+# kubernetes 学习
+官网: [英文文档主页](https://kubernetes.io/docs/home/)
+
+官网: [中文文档主页](https://kubernetes.io/zh/docs/home/)
+**注意**: 文档未必是最新的
+
+github: [kubernetes](https://github.com/kubernetes/kubernetes)
+
+阿里云: [容器服务Kubernetes版](https://help.aliyun.com/document_detail/86987.html?spm=a2c4g.11174283.6.667.715b2ceeBpXV4b)
 
 # kubernetes 安装
 
@@ -130,8 +139,8 @@ chmod 755 /etc/sysconfig/modules/ipvs.modules && bash /etc/sysconfig/modules/ipv
 ### 网络问题配置
 ```
 cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-net.bridge.bridge-nf-call-iptables  = 1
-net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables  = 1 # ipv4 方式，容器连接到 Linux 网桥，参数设置为1，确保 iptables 代理正常工作
+net.bridge.bridge-nf-call-ip6tables = 1 # ipv6 方式，容器连接到 Linux 网桥，参数设置为1，确保 iptables 代理正常工作
 net.ipv4.ip_forward                 = 1 # 启用IP转发功能，做NAT服务或者路由时才会用到，允许数据包转发，本机需要做路由转发，若是ipv6，则添加 net.ipv6.conf.all.forwarding=1
 net.ipv4.conf.all.forwarding        = 1 # 不转发源路由帧，如果做NAT建议开启
 net.ipv4.tcp_tw_recycle             = 0 # 表示开启TCP连接中TIME-WAIT sockets的快速回收，默认为0，表示关闭。
@@ -892,6 +901,36 @@ Pod 使用 ServiceAccount 认证时，service-account-token 中的 JWT 会保存
   EOF
   kubectl create -f devuser-pods-reader-banding.yml
   ```
+
+## 检查证书是否过期
+
+可以使用 check-expiration 子命令来检查证书何时过期
+```
+# kubeadm certs check-expiration
+[check-expiration] Reading configuration from the cluster...
+[check-expiration] FYI: You can look at this config file with 'kubectl -n kube-system get cm kubeadm-config -o yaml'
+
+CERTIFICATE                EXPIRES                  RESIDUAL TIME   CERTIFICATE AUTHORITY   EXTERNALLY MANAGED
+admin.conf                 May 26, 2022 04:48 UTC   331d                                    no
+apiserver                  May 26, 2022 04:48 UTC   331d            ca                      no
+apiserver-etcd-client      May 26, 2022 04:48 UTC   331d            etcd-ca                 no
+apiserver-kubelet-client   May 26, 2022 04:48 UTC   331d            ca                      no
+controller-manager.conf    May 26, 2022 04:48 UTC   331d                                    no
+etcd-healthcheck-client    May 26, 2022 04:48 UTC   331d            etcd-ca                 no
+etcd-peer                  May 26, 2022 04:48 UTC   331d            etcd-ca                 no
+etcd-server                May 26, 2022 04:48 UTC   331d            etcd-ca                 no
+front-proxy-client         May 26, 2022 04:48 UTC   331d            front-proxy-ca          no
+scheduler.conf             May 26, 2022 04:48 UTC   331d                                    no
+
+CERTIFICATE AUTHORITY   EXPIRES                  RESIDUAL TIME   EXTERNALLY MANAGED
+ca                      May 24, 2031 04:48 UTC   9y              no
+etcd-ca                 May 24, 2031 04:48 UTC   9y              no
+front-proxy-ca          May 24, 2031 04:48 UTC   9y              no
+```
+该命令显示 `/etc/kubernetes/pki` 文件夹中的客户端证书以及 kubeadm（`admin.conf`, `controller-manager.conf` 和 `scheduler.conf`） 使用的 KUBECONFIG 文件中嵌入的客户端证书的到期时间/剩余时间。
+
+另外， kubeadm 会通知用户证书是否由外部管理； 在这种情况下，用户应该小心的手动/使用其他工具来管理证书更新。
+
   
 ## k8s 的 master 更换 IP
 参考：[k8s的master更换ip](https://www.cnblogs.com/chaojiyingxiong/p/12106590.html)

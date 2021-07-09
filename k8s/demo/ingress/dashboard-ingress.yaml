@@ -1,0 +1,24 @@
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: ingress-dashboard
+  namespace: kubernetes-dashboard
+  annotations:
+    # 注意这里：必须指定后端服务为HTTPS服务。
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+spec:
+  tls:
+    - hosts:
+      - dashboard.k8s.com
+      secretName: dashboard-secret
+  rules:
+    - host: dashboard.k8s.com
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: kubernetes-dashboard
+              port: 
+                number: 443

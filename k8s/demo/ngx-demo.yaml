@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  namespace: dev
+  labels:
+    tier: front
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    tier: front
+  ports:
+  - port: 80
+---
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: ingress-dev
+  namespace: dev
+spec:
+  rules:
+    - host: nginx.k8s.com
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: nginx
+              port:
+                number: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx
+  namespace: dev
+  labels:
+    tier: front
+spec:
+  replicas: 3
+  selector:
+    matchExpressions:
+    - key: tier
+      operator: In
+      values:
+      - front
+  template:
+    metadata:
+      name: nginx
+      labels:
+        tier: front
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        ports:
+        - containerPort: 80
+        env:
+        - name: ok
+          value: "1"
+        lifecycle:
+          postStart:
+            exec:
+              command: 
+              - /bin/sh
+              - -c
+              - hostname >> /usr/share/nginx/html/index.html
+        readinessProbe:
+          exec:
+            command: 
+            - /bin/sh
+            - -c
+            - test $ok -eq 1 && curl http://localhost/
+          failureThreshold: 3
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
