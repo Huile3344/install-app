@@ -30,6 +30,18 @@ scrape_configs:
   static_configs:
   - targets: ['localhost:9090']
 
+- job_name: 'grafana'
+  # 设定DNS A记录
+  dns_sd_configs:
+    - names:
+        - 'tasks.grafana'
+      type: 'A'
+      port: 3000
+  # 把__meta_dns_name的值设置到指标的 grafana 这个label里
+  relabel_configs:
+    - source_labels: ['__meta_dns_name']
+      target_label: 'grafana'
+
 - job_name: 'cadvisor'
   # 设定DNS A记录
   dns_sd_configs:
