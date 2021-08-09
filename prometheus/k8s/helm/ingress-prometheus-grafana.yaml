@@ -1,0 +1,29 @@
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: prometheus-stack-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+# 注意 prometheus 和 grafana 只能映射 / 路径，要不然页面无法渲染出来
+spec:
+  rules:
+    - host: grafana.k8s.com
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: kube-prometheus-stack-grafana
+              port:
+                number: 80
+    - host: prometheus.k8s.com
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: kube-prometheus-stack-prometheus
+              port:
+                number: 9090

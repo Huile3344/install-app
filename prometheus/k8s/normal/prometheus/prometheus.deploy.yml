@@ -1,0 +1,59 @@
+---
+apiVersion:  apps/v1
+kind: Deployment
+metadata:
+  labels:
+    name: prometheus-deployment
+  name: prometheus
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+        - image: prom/prometheus
+          name: prometheus
+          command:
+            - "/bin/prometheus"
+          # 通过storage.tsdb.path指定了 TSDB 数据的存储路径
+          # 通过storage.tsdb.retention设置了保留多长时间的数据
+          # 通过web.enable-admin-api参数可以用来开启对 admin api 的访问权限
+          # 通过web.enable-lifecycle非常重要，用来开启支持热更新的，有了这个参数之后，prometheus.yml 配置文件只要更新了，
+          # 通过执行 curl -X POST http://localhost:9090/-/reload 就会立即生效，所以一定要加上这个参数
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.path=/prometheus"
+            - "--storage.tsdb.retention=7d"
+            - "--web.enable-admin-api"
+            - "--web.enable-lifecycle"
+          ports:
+            - containerPort: 9090
+          volumeMounts:
+            - mountPath: "/prometheus"
+              name: data-volume
+            - mountPath: "/etc/prometheus/prometheus.yml"
+              subPath: prometheus.yml
+              name: config-volume
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              cpu: 500m
+              memory: 2500Mi
+      serviceAccountName: prometheus
+      volumes:
+        - name: config-volume
+          configMap:
+            name: prometheus-config
+#        - name: data
+#          emptyDir: {}
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: prometheus-data-pvc

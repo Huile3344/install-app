@@ -1,0 +1,80 @@
+---
+apiVersion:  apps/v1
+kind: Deployment
+metadata:
+  labels:
+    name: grafana--deployment
+  name: grafana
+  namespace: monitoring
+spec:
+  revisionHistoryLimit: 10
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - image: grafana/grafana
+          name: grafana
+          ports:
+            - containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: admin
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: admin
+            - name: GF_USERS_ALLOW_SIGN_UP
+              value: "false"
+            # 插件目录配置 755 权限，防止无法访问
+            - name: GF_INSTALL_PLUGINS
+              value: grafana-clock-panel,grafana-simple-json-datasource
+          readinessProbe:
+            failureThreshold: 10
+            httpGet:
+              path: /api/health
+              port: 3000
+              scheme: HTTP
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 30
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /api/health
+              port: 3000
+              scheme: HTTP
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          resources:
+            limits:
+              cpu: 100m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          volumeMounts:
+            - mountPath: /var/lib/grafana
+              name: data-volume
+            - mountPath: /etc/grafana/provisioning/dashboards
+              name: dashboard-volume
+            - mountPath: /etc/grafana/provisioning/datasources
+              name: datasource-volume
+      securityContext:
+        fsGroup: 472
+        runAsUser: 472
+      volumes:
+        - name: dashboard-volume
+          configMap:
+            name: grafana-dashboard
+        - name: datasource-volume
+          configMap:
+            name: grafana-datasource
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: grafana-data-pvc

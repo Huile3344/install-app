@@ -1,0 +1,18 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: prometheus-data-pv
+  labels:
+    name: prometheus-data-pv
+    release: stable
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Recycle
+  nfs:
+    path: /var/lib/nfs/prometheus/data
+    server: 10.181.4.88
+  storageClassName: prometheus

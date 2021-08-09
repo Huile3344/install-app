@@ -1,0 +1,245 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: monitoring
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval:     15s
+      evaluation_interval: 15s
+    scrape_configs:
+      - job_name: "kubernetes-apiservers"
+        kubernetes_sd_configs:
+          - role: endpoints
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        authorization:
+          credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+          - source_labels:
+              [
+                  __meta_kubernetes_namespace,
+                  __meta_kubernetes_service_name,
+                  __meta_kubernetes_endpoint_port_name,
+              ]
+            action: keep
+            regex: default;kubernetes;https
+      - job_name: "kubernetes-nodes"
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        authorization:
+          credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+          - target_label: __address__
+            replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_name]
+            regex: (.+)
+            target_label: __metrics_path__
+            replacement: /api/v1/nodes/${1}/proxy/metrics
+
+      - job_name: "kubernetes-cadvisor"
+        scheme: https
+        metrics_path: /metrics/cadvisor
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        authorization:
+          credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+          - target_label: __address__
+            replacement: kubernetes.default.svc:443
+          - source_labels: [__meta_kubernetes_node_name]
+            regex: (.+)
+            target_label: __metrics_path__
+            replacement: /api/v1/nodes/${1}/proxy/metrics
+        # 配合 grafana 使用的配置
+        metric_relabel_configs:
+        - source_labels: [instance]
+          separator: ;
+          regex: (.+)
+          target_label: node
+          replacement: $1
+          action: replace
+        - source_labels: [pod_name]
+          separator: ;
+          regex: (.+)
+          target_label: pod
+          replacement: $1
+          action: replace
+        - source_labels: [container_name]
+          separator: ;
+          regex: (.+)
+          target_label: container
+          replacement: $1
+          action: replace
+
+      - job_name: "kubernetes-service-endpoints"
+        kubernetes_sd_configs:
+          - role: endpoints
+        relabel_configs:
+          # 重新打标签以仅抓取具有 "prometheus.io/should_be_scraped = true" 注释的 endpoints
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_should_be_scraped]
+            action: keep
+            regex: true
+          # 重新打标签以根据 endpoints "prometheus.io/metric_path = <metric path>" 注释自定义指标路径
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_metric_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          # 重新打标签以根据 endpoints "prometheus.io/scrape_port = <port>" 注释仅抓取服务所需的单个端口
+          - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_scrape_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          # 重新打标签以根据 endpoints "prometheus.io/scrape_scheme = <scheme>" 注释为所有服务抓取目标配置抓取scheme
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape_scheme]
+            action: replace
+            target_label: __scheme__
+            regex: (https?)
+          - action: labelmap
+            regex: __meta_kubernetes_service_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: kubernetes_namespace
+          - source_labels: [__meta_kubernetes_service_name]
+            action: replace
+            target_label: kubernetes_name
+
+      - job_name: "kubernetes-services"
+        metrics_path: /probe
+        params:
+          module: [http_2xx]
+        kubernetes_sd_configs:
+          - role: service
+        relabel_configs:
+          # 重新打标签以仅探测具有 "prometheus.io/should_be_probed = true" 注释的某些 service
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_should_be_probed]
+            action: keep
+            regex: true
+          - source_labels: [__address__]
+            target_label: __param_target
+          - target_label: __address__
+            replacement: blackbox-exporter.example.com:9115
+          - source_labels: [__param_target]
+            target_label: instance
+          - action: labelmap
+            regex: __meta_kubernetes_service_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: kubernetes_namespace
+          - source_labels: [__meta_kubernetes_service_name]
+            target_label: kubernetes_name
+
+      # 抓取配置以通过 Blackbox Exporter 探测入口
+      - job_name: "kubernetes-ingresses"
+        metrics_path: /probe
+        params:
+          module: [http_2xx]
+        kubernetes_sd_configs:
+          - role: ingress
+        relabel_configs:
+          # 重新打标签以仅探测一些具有 "prometheus.io/should_be_probed = true" 注释的 ingress
+          - source_labels: [__meta_kubernetes_ingress_annotation_prometheus_io_should_be_probed]
+            action: keep
+            regex: true
+          - source_labels:
+              [
+                  __meta_kubernetes_ingress_scheme,
+                  __address__,
+                  __meta_kubernetes_ingress_path,
+              ]
+            regex: (.+);(.+);(.+)
+            replacement: ${1}://${2}${3}
+            target_label: __param_target
+          - target_label: __address__
+            replacement: blackbox-exporter.example.com:9115
+          - source_labels: [__param_target]
+            target_label: instance
+          - action: labelmap
+            regex: __meta_kubernetes_ingress_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: kubernetes_namespace
+          - source_labels: [__meta_kubernetes_ingress_name]
+            target_label: kubernetes_name
+
+      - job_name: "kubernetes-pods"
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          # 重新打标签以仅抓取具有 "prometheus.io/should_be_scraped = true" 注释的 pod。
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_should_be_scraped]
+            action: keep
+            regex: true
+          # 重新打标签以根据 pod "prometheus.io/metric_path = <metric path>" 注释自定义指标路径
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_metric_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          # 重新打标签以根据 pod  "prometheus.io/scrape_port = <port>" 注释仅抓取 pod 所需的单个端口
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_scrape_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - action: labelmap
+            regex: __meta_kubernetes_pod_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: kubernetes_namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: kubernetes_pod_name
+
+      - job_name: 'kubernetes-kubelet'
+        kubernetes_sd_configs:
+        - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        authorization:
+          credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+        - action: labelmap
+          regex: __meta_kubernetes_node_label_(.+)
+        - target_label: __address__
+          replacement: kubernetes.default.svc:443
+        - source_labels: [__meta_kubernetes_node_name]
+          regex: (.+)
+          target_label: __metrics_path__
+          replacement: /api/v1/nodes/${1}/proxy/metrics
+
+      - job_name: 'grafana'
+        static_configs:
+        - targets: ['grafana.monitoring:3000']
+
+      - job_name: 'prometheus'
+        static_configs:
+        - targets: ['localhost:9090']
+
+      - job_name: "kubernetes-node-exporter"
+        kubernetes_sd_configs:
+          - role: node
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+          - source_labels: [__address__]
+            regex: '(.*):10250'
+            replacement: '${1}:9100'
+            target_label: __address__
+            action: replace
+          #- source_labels: [__meta_kubernetes_node_address_InternalIP]
+          #  action: replace
+          #  target_label: ip
+          #- source_labels: [__meta_kubernetes_node_name]
+          #  action: replace
+          #  target_label: node
