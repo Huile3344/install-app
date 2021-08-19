@@ -61,6 +61,9 @@ Prometheus 重视可靠性。即使在出现故障的情况下，您也可以随
 
 ## Prometheus 基本概念
 
+### 时间序列
+时间序列是按照时间排序的一组随机变量，它通常是在相等间隔的时间段内依照给定的采样率对某种潜在过程进行观测的结果。时间序列数据本质上反映的是某个或者某些随机变量随时间不断变化的趋势，而时间序列预测方法的核心就是从数据中挖掘出这种规律，并利用其对将来的数据做出估计
+
 ### 数据模型
 Prometheus 从根本上将所有数据存储为时间序列(time series)：属于同一指标和同一组标签维度的带时间戳的值流。除了存储的时间序列，Prometheus 可能会生成临时派生的时间序列作为查询的结果。
 
@@ -104,6 +107,11 @@ node_cpu_seconds_total{cpu="0", instance="10.0.2.18:9100", job="node-exporter", 
 # 第一个是时间戳，第二个是 float64 值
 ```
 
+#### 数据格式
+```
+<------------------metric------------------->@<-timestamp->=><-value->
+http_request_total{status="200",method="GET"}@1434417560938=>94355
+```
 
 #### 符号(Notation) 表示形式
 给定一个指标名称和一组标签，时间序列经常使用以下符号标识：
@@ -463,4 +471,43 @@ increase(http_requests_total{job="api-server"}[5m])
 - `stddev_over_time(range-vector)`：指定区间内值的总体标准差。
 - `stdvar_over_time(range-vector)`：指定区间内值的总体标准方差。
 - `last_over_time(range-vector)`：指定间隔内的最近点值。
-请注意，指定间隔中的所有值在聚合中都具有相同的权重，即使这些值在整个间隔中的间隔不等。 
+请注意，指定间隔中的所有值在聚合中都具有相同的权重，即使这些值在整个间隔中的间隔不等。
+
+## Alertmanager
+
+- GitHub: [alertmanager](https://github.com/prometheus/alertmanager)
+- 官网: [alertmanager](https://prometheus.io/docs/alerting/latest/overview/)
+
+Alertmanager 处理客户端应用程序（例如 Prometheus 服务器）发送的警报。它负责对它们进行重复数据删除、分组和路由到正确的接收器集成，例如 email、PagerDuty 或 OpsGenie。它还负责警报的静默(silence)和抑制(inhibition)。
+
+下面介绍 Alertmanager 实现的核心概念。
+
+### 分组(Group)
+分组将类似性质的警报分类为单个通知。当许多系统同时发生故障并且可能同时触发数百到数千个警报时，这在较大的中断期间尤其有用。
+
+示例：当发生网络分区时，集群中正在运行数十个或数百个服务实例。您的一半服务实例无法再访问数据库。 Prometheus 中的警报规则配置为在每个服务实例无法与数据库通信时发送警报。因此，数百个警报被发送到 Alertmanager。
+
+作为用户，您只想获得一个页面，同时仍然能够准确查看哪些服务实例受到影响。因此，可以将 Alertmanager 配置为按集群和警报名称对警报进行分组，以便它发送单个紧凑通知。
+
+警报分组、分组通知的时间以及这些通知的接收者由配置文件中的路由树进行配置。
+
+### 抑制(Inhibition)
+抑制是一个概念，如果某些其他警报已经触发，则抑制某些警报的通知。
+
+示例：发出警报，通知无法访问整个集群。如果该特定警报正在触发，Alertmanager 可以配置为静音与该集群相关的所有其他警报。这可以防止收到与实际问题无关的数百或数千个触发警报的通知。
+
+禁止通过 Alertmanager 的配置文件进行配置。
+
+### 静默(Silence)
+静默(silence)是在给定时间内简单地将警报静音的直接方法。静默(silence)是基于匹配器配置的，就像路由树一样。检查传入警报是否与活动静默(silence)的所有相等或正则表达式匹配器匹配。如果他们这样做，则不会发送该警报的通知。
+
+静默(silence)是在 Alertmanager 的 Web 界面中配置的。
+
+### 客户行为
+Alertmanager 对其客户端的行为有特殊要求。这些仅与不使用 Prometheus 发送警报的高级用例相关。
+
+### 高可用性
+Alertmanager 支持配置以创建集群以实现高可用性。这可以使用 --cluster-* 标志进行配置。
+
+重要的是不要在 Prometheus 及其警报管理器之间负载平衡流量，而是将 Prometheus 指向所有警报管理器的列表。 
+
