@@ -1,0 +1,83 @@
+---
+apiVersion: v1
+data:
+  # 123
+  password: MTIz
+  # user
+  username: dXNlcg==
+kind: Secret
+metadata:
+  name: spring-user
+  namespace: monitoring
+type: Opaque
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app: spring-security-demo-simple
+  name: spring-security-demo-simple
+  namespace: dev
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+    - name: http-metrics
+      port: 80
+  selector:
+    app: spring-security-demo-simple
+---
+apiVersion:  apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: spring-security-demo-simple
+  name: spring-security-demo-simple
+  namespace: dev
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spring-security-demo-simple
+  template:
+    metadata:
+      labels:
+        app: spring-security-demo-simple
+    spec:
+      containers:
+        - image: spring-security-demo-simple:v1
+          name: spring-security-demo-simple
+          ports:
+          - containerPort: 80
+          imagePullPolicy: IfNotPresent
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app: spring-security-demo-simple
+    release: kube-prometheus-stack
+  name: spring-security-demo-simple
+  namespace: monitoring
+spec:
+  endpoints:
+    - port: http-metrics
+      path: /actuator/prometheus
+      # 因为 spring-security 需要账号密码
+      basicAuth:
+        username:
+          # monitoring 命名空间下的 secrect 名称
+          name: spring-user
+          # secrect 内的 key
+          key: username
+        password:
+          name: spring-user
+          key: password
+  namespaceSelector:
+    matchNames:
+      - dev
+  selector:
+    matchLabels:
+      app: spring-security-demo-simple
