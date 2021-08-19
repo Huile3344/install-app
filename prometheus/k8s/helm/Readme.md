@@ -210,6 +210,24 @@ $ kubectl -n kube-system delete pod kube-proxy-xxx
      fsGroup: 1000
    ```
 
+## helm 安装 kube-prometheus-stack
+### 安装 Release kube-prometheus-stack
+执行如下命令安装(values-v3.yaml 是对应上面内容修改后的 values.yaml):
+```
+$ helm -n monitoring install kube-prometheus-stack -f values-v3.yaml prometheus-community/kube-prometheus-stack
+```
+
+### 查看当前 kube-prometheus-stack 的 prometheus 配置信息
+- 安装命令行 json 处理器 jq
+    ```
+    $ yum install -y jq.x86_64
+    ```
+- 导出当前 prometheus 配置信息
+    ```
+    $ kubectl -n monitoring get secret prometheus-kube-prometheus-stack-prometheus -ojson | jq -r '.data["prometheus.yaml.gz"]' | base64 -d | gunzip > prometheus.yml
+    ```
+- 分析查看配置信息，核对自定义的 ServiceMoinitor 规则是否生效和添加
+
 ## 监控 ingress
 ### 开放 ingress 监控端口
 - 查询其健康检查的端口
@@ -280,3 +298,12 @@ $ kubectl -n kube-system delete pod kube-proxy-xxx
 - 查看 Prometheus 的 targets 和 configuration 确认已经配置和监控已经生效
 - 在 grafana 导入 nginx ingress 的 dashboard 如： `9614` 或 `10187`
 
+## helm 卸载 kube-prometheus-stack
+执行如下命令卸载 Release
+```
+$ helm -n monitoring uninstall kube-prometheus-stack 
+```
+删除多余的 pvc
+```
+$ kubectl -n monitoring delete pvc prometheus-kube-prometheus-stack-prometheus-db-prometheus-kube-prometheus-stack-prometheus-0
+```
