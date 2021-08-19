@@ -3,6 +3,16 @@
 - GitHub
   - [prometheus-community/helm-charts](https://github.com/prometheus-community/helm-charts)
   - [官网使用说明](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
+  - [prometheus-operator](https://prometheus-operator.dev/) 了解以下 CRD 规则
+    * Prometheus
+    * Alertmanager
+    * ThanosRuler
+    * ServiceMonitor
+    * PodMonitor
+    * Probe
+    * PrometheusRule
+    * AlertmanagerConfig
+
 
 kube-prometheus-stack 是基于 kubernetes 学习 prometheus 的最好示例，可参考其使用和配置
 
@@ -94,7 +104,6 @@ $ cp /etc/kubernetes/manifests/kube-controller-manager.yaml /etc/kubernetes/mani
 $ vim /etc/kubernetes/manifests/kube-controller-manager.yaml
 ```
 - `--bind-address127.0.0.1` 修改为 `--bind-address=0.0.0.0`
-- 注释掉 `--port=0`
 修改成功后，要等一会儿，k8s会自动重新部署这部分 pod (pod模式部署的)
 
 ### 修改 kube-scheduler
@@ -108,7 +117,6 @@ $ cp /etc/kubernetes/manifests/kube-scheduler.yaml /etc/kubernetes/manifests.bak
 $ vim /etc/kubernetes/manifests/kube-scheduler.yaml
 ```
 - `--bind-address127.0.0.1` 修改为 `--bind-address=0.0.0.0`
-- 注释掉 `--port=0`
 修改成功后，要等一会儿，k8s会自动重新部署这部分 pod (pod模式部署的)
 
 ### 修改 kube-proxy
@@ -201,3 +209,74 @@ $ kubectl -n kube-system delete pod kube-proxy-xxx
      runAsUser: 1000
      fsGroup: 1000
    ```
+
+## 监控 ingress
+### 开放 ingress 监控端口
+- 查询其健康检查的端口
+    ```
+    $ kubectl -n ingress-nginx describe pod ingress-nginx-controller-xxx
+    
+    # 获取到类似如下内容，表示其对外暴露的监控接口是 10254， 其监控url是 /metrics，更详细内容可去官网查看
+        Liveness:   http-get http://:10254/healthz delay=10s timeout=1s period=10s #success=1 #failure=5
+        Readiness:  http-get http://:10254/healthz delay=10s timeout=1s period=10s #success=1 #failure=3
+    ```
+- 修改 svc 或再添加一个 svc ，暴露监控端口
+**注意**: ServiceMonitor 期望使用 Service 上定义的端口名称，若使用不正确的示例（仅端口号） 则 ServiceMonitor 会出现错误提示: `spec.endpoints.port in body must be of type string: "integer"`  
+    ```
+    $ kubectl -n ingress-nginx edit svc ingress-nginx-controller
+    # 在 ports: 下添加如下内容
+      - name: http-metrics
+        nodePort: 30254
+        port: 10254
+    ```
+- 调用监控接口
+    ```
+    $ curl http://<svcIp>:30254/metrics
+    # 可获取到指标信息
+    ```
+
+### 新增监控 ingress svc 的 ServiceMoinitor
+- ServiceMoinitor 需要创建在满足 Prometheus 这个 CRD 指定的条件以下条件下，否则不会被监控（其他CRD类似）：
+ * serviceAccountName
+ * serviceMonitorNamespaceSelector
+ * serviceMonitorSelector
+   ```
+     # 指定的 sa ，若是跨命名空间，需要创建对应命名空间下的 sa
+     serviceAccountName: kube-prometheus-stack-prometheus
+     # 全部命名空间
+     serviceMonitorNamespaceSelector: {}
+     serviceMonitorSelector:
+       matchLabels:
+         # 对应 helm 的 release_name
+         release: kube-prometheus-stack
+   ```
+- ingress 的 servicemoinitor 文件 `ingress-servicemonitor.yml` 内容类似如下
+    ```
+    apiVersion: monitoring.coreos.com/v1
+    kind: ServiceMonitor
+    metadata:
+      labels:
+        app: ingress-nginx
+        # 需要与 prometheuses.monitoring.coreos.com 中的 serviceMonitorSelector 对应，否则 prometheus 不会抓取这个 ServiceMonitor
+        release: kube-prometheus-stack
+      name: ingress-nginx-metrics
+      namespace: monitoring
+    spec:
+      endpoints:
+      - port: http-metrics
+      namespaceSelector:
+        matchNames:
+        - ingress-nginx
+      selector:
+        matchLabels:
+          app.kubernetes.io/instance: ingress-nginx
+          app.kubernetes.io/name: ingress-nginx
+    ```
+- 创建 servicemoinitor
+    ```
+    $ kubectl apply -f ingress-nginx-sm.yml --record
+    ```
+### 查看监控情况
+- 查看 Prometheus 的 targets 和 configuration 确认已经配置和监控已经生效
+- 在 grafana 导入 nginx ingress 的 dashboard 如： `9614` 或 `10187`
+
