@@ -1,0 +1,54 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nacos-pv
+  labels:
+    name: nacos-pv
+    release: stable
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    path: /var/lib/nfs/nacos/data
+    server: 10.181.4.88
+  storageClassName: nacos
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nacos-pv2
+  labels:
+    name: nacos-pv
+    release: stable
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    path: /var/lib/nfs/nacos/data2
+    server: 10.181.4.88
+  storageClassName: nacos
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nacos-pv3
+  labels:
+    name: nacos-pv
+
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    path: /var/lib/nfs/nacos/data3
+    server: 10.181.4.88
+  storageClassName: nacos
