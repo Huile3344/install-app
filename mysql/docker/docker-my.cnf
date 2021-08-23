@@ -1,4 +1,7 @@
 [mysqld]
+# 需要加上这个配置，否则远程无法登录
+default-authentication-plugin=mysql_native_password
+
 # pid文件所在目录
 #pid-file        = /opt/mysql/mysqld.pid
 # MySQL客户端程序和服务器之间的本地通讯指定一个套接字文件
