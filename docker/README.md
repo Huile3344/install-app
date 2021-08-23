@@ -78,3 +78,14 @@ Docker Hub：**https://hub.docker.com** 搜索镜像，获取镜像说明、使�
   业务服务的都合剂，以按需使用的方式提供基于容器的云端运行环境的平台，形成了 一种
   具有独特价值的服务，这类场景被称为容器即服务 。
  
+# docker 使用代理
+```
+$ vim /lib/systemd/system/docker.service
+# 在 ExecStart= 上面加上以下3行内容，注意：HTTPS_PROXY已要设置和HTTP_PROXY一样，除非开了https的代理
+Environment="HTTP_PROXY=http://10.181.4.8:7890/"
+Environment="HTTPS_PROXY=http://10.181.4.8:7890/"
+Environment="NO_PROXY=localhost,127.0.0.1,docker-registry.example.com,docker.io,aliyuncs.com"
+
+# 重新加载docker配置并重启
+$ systemctl daemon-reload && systemctl restart docker.service
+```
