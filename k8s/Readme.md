@@ -290,8 +290,8 @@ systemctl start kubelet
 ```
 
 ## 安装 kubernetes 需要的 container runtime
-参考 kubernetes 容器运行时安装: https://kubernetes.io/zh/docs/setup/production-environment/container-runtimes/
-参考 docker 安装 https://docs.docker.com/engine/install/centos/#install-using-the-repository
+参考 [kubernetes容器运行时安装](https://kubernetes.io/zh/docs/setup/production-environment/container-runtimes/)
+参考 [docker安装](https://docs.docker.com/engine/install/centos/#install-using-the-repository)
 ### 卸载旧版 docker
 ```
 sudo yum remove docker \
@@ -637,7 +637,57 @@ kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboar
 
 浏览器https://ip:port 选择token方式登录
 
+## 安装 helm
+- 去GitHub官网下载 [需要的版本](https://github.com/helm/helm/releases) 
+- 解压
+    ```
+    $ tar -zxvf helm-v3.6.0-linux-amd64.tar.gz
+    ```
+- 在解压目中找到 `helm` 程序，移动到需要的目录中(``)，以便 `helm`命令可直接使用
+    ```
+    # mv linux-amd64/helm /usr/local/bin/helm
+    $ mv linux-amd64/helm /opt/bin/helm
+    ```
+- helm 执行命令需要指定使用的kubernetes集群，helm默认使用的kubernetes配置文件是: `~/.kube/config`，在文件 `~/.bash_profile` 中添加环境变量 `KUBECONFIG` 修改配置文件路径
+    ```
+    $ vim ~/.bash_profile
+    # 添加如下内容:
+    export KUBECONFIG=/etc/kubernetes/admin.conf
+    $ source ~/.bash_profile
+    ```
+- 添加一个 chart 仓库，验证 helm 是否可正常使用(除可能的网络异常外，没异常，则 helm 可正常使用)
+    ```
+    $ helm repo add bitnami https://charts.bitnami.com/bitnami
+    ```
 
+## 安装 ingress-nginx
+参考: [ingress-nginx](https://kubernetes.github.io/ingress-nginx/deploy/)
+- 创建 ingress-nginx 命名空间
+    ```
+    $ kubectl create namespace ingress-nginx
+    ```
+- 使用 helm 安装方式(安装到 ingress-nginx 命名空间)
+    ```
+    # 原始安装方式 
+    $ helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+    $ helm repo update
+    $ helm -n ingress-nginx install ingress-nginx ingress-nginx/ingress-nginx --version 3.36.0
+    
+    # 基于压缩包
+    $ helm -n ingress-nginx install ingress-nginx ingress-nginx-3.36.0.tgz
+    
+    # 针对已经使用了 kube-prometheus-stack 监控的方式
+    $ helm -n ingress-nginx install -f values-prometheus.yaml ingress-nginx ingress-nginx-3.36.0.tgz
+  
+    # 更新 values-prometheus.yaml 配置内容
+    $ helm -n ingress-nginx upgrade -f values-prometheus.yaml ingress-nginx ingress-nginx-3.36.0.tgz
+    ```
+    查看已安装的版本:
+    ```
+    POD_NAME=$(kubectl -n ingress-nginx get pods -l app.kubernetes.io/name=ingress-nginx -o jsonpath='{.items[0].metadata.name}')
+    kubectl -n ingress-nginx exec -it $POD_NAME -- /nginx-ingress-controller --version
+    ```
+- 
 
 ## 至此单机 k8s 安装完成
 
