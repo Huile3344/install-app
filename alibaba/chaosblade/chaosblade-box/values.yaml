@@ -1,0 +1,40 @@
+# Default values for chaosblade-box.
+box:
+  repository: registry.cn-hangzhou.aliyuncs.com/chaosblade/chaosblade-box
+  version: 0.4.1
+  pullPolicy: IfNotPresent
+
+spring:
+  datasource:
+    url: jdbc:mysql://10.181.4.88:30006/chaosblade?characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: 123456
+chaos:
+  collector:
+    enable: true
+    period: 30
+    type: kube_api
+    prometheus:
+      api: http://kube-prometheus-stack-prometheus.monitoring:9090/prometheus/api/v1/query
+  agent:
+    port: 19527
+  scene:
+    import: true
+    market: #https://chaosblade.oss-cn-hangzhou.aliyuncs.com/platform/market/chaostools/
+    originals:
+      litmus:
+        generic:
+          name: generic
+          version: 1.13.0
+          url: https://hub.litmuschaos.io/api/chaos/1.13.0?file=charts/generic/experiments.yaml
+
+logging:
+  level:
+    root: info
+    box: info
+ingress:
+  enabled: true
+  annotations: {}
+  host: chaosblade.k8s.com
+  # path 目前是无法修改的
+  path: /

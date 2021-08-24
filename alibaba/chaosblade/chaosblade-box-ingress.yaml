@@ -1,0 +1,17 @@
+kind: Ingress
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: chaosblade-ingress
+  namespace: chaosblade
+spec:
+  rules:
+    - host: chaosblade.k8s.com
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: chaosblade-box
+              port:
+                number: 8080
