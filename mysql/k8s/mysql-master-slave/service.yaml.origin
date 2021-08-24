@@ -1,6 +1,22 @@
-# 通过 ingress 的 ConfigMap 可直接代理 mysql 的 tcp 端口，如：30006代理主库的3306 30008代理从库的3306
-
-# 必须要有 write-mysql-svc 这个 service 供 master的 StatefulSet 使用
+# Headless service for stable DNS entries of StatefulSet members.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  labels:
+    db: mysql
+    env: dev
+    relate: master
+spec:
+  ports:
+  - name: mysql
+    port: 3306
+  clusterIP: None
+  selector:
+    db: mysql
+    env: dev
+    relate: master
+---
 kind: Service
 apiVersion: v1
 metadata:
@@ -14,16 +30,13 @@ spec:
     db: mysql
     env: dev
     relate: master
-  clusterIP: None
+  type: NodePort
   ports:
-  - name: mysql
+  - nodePort: 30008
     port: 3306
-  - name: exporter
-    port: 9104
 ---
 # Client service for connecting to any MySQL instance for reads.
 # For writes, you must instead connect to the master: mysql-0.mysql.
-# 必须要有 read-mysql-svc 这个 service 供 slave StatefulSet 使用
 apiVersion: v1
 kind: Service
 metadata:
@@ -37,9 +50,10 @@ spec:
     db: mysql
     env: dev
     relate: slave
-  clusterIP: None
+  type: NodePort
   ports:
   - name: mysql
     port: 3306
-  - name: exporter
-    port: 9104
+    nodePort: 30006
+
+    

@@ -47,7 +47,7 @@ spec:
       env: dev
       relate: slave
   # 必须对应一个name是mysql的服务资源
-  serviceName: read-mysql-svc
+  serviceName: mysql
   replicas: 2
   template:
     metadata:
@@ -90,9 +90,9 @@ spec:
           [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
           ordinal=${BASH_REMATCH[1]}
           if [[ $(($ordinal%2)) -eq 0 ]] ; then
-            prepeer=mysql-master-$(($ordinal/2)).write-mysql-svc
+            prepeer=mysql-master-$(($ordinal/2)).mysql
           else
-            prepeer=mysql-slave-$(($ordinal-1)).read-mysql-svc
+            prepeer=mysql-slave-$(($ordinal-1)).mysql
           fi
           # Clone data from previous peer.
           ncat --recv-only $prepeer 3307 | xbstream -x -C /var/lib/mysql
@@ -143,7 +143,6 @@ spec:
           timeoutSeconds: 1
       - name: xtrabackup
         image: gcr.io/google-samples/xtrabackup:1.0
-        imagePullPolicy: IfNotPresent
         env:
         - name: MYSQL_ROOT_PASSWORD
           valueFrom:
@@ -184,9 +183,9 @@ spec:
             # In case of container restart, attempt this at-most-once.
             mv change_master_to.sql.in change_master_to.sql.orig
             mysql -h 127.0.0.1 <<EOF
-          ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';
+          #ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY '$MYSQL_ROOT_PASSWORD';
           $(<change_master_to.sql.orig),
-              MASTER_HOST='mysql-master-$(($ordinal/2)).write-mysql-svc',
+              MASTER_HOST='mysql-master-$(($ordinal/2)).mysql',
               MASTER_USER='root',
               MASTER_PASSWORD='',
               MASTER_CONNECT_RETRY=10;
@@ -207,47 +206,12 @@ spec:
           requests:
             cpu: 100m
             memory: 100Mi
-      - name: mysqld-exporter
-        image: prom/mysqld-exporter
-        ports:
-          - name: http
-            containerPort: 9104
-#        command:
-#          - '--collect.my-cnf=/etc/slave.cnf'
-#          - '--collect.slave_status'
-#          - '--collect.slave_hosts'
-#          - '--collect.info_schema.processlist'
-#          - '--collect.info_schema.innodb_metrics'
-#          - '--collect.info_schema.innodb_tablespaces'
-#          - '--collect.info_schema.replica_host'
-#          - '--collect.info_schema.innodb_cmp'
-#          - '--collect.info_schema.innodb_cmpmem'
-#        volumeMounts:
-#          - name: exporter-cnf
-#            mountPath: /etc/slave.cnf
-#            subPath: slave.cnf
-        env:
-          - name: DATA_SOURCE_NAME
-            valueFrom:
-              configMapKeyRef:
-                name: exporter
-                key: dataSourceName
-        resources:
-          requests:
-            cpu: 100m
-            memory: 100Mi
       volumes:
       - name: conf
         emptyDir: {}
       - name: config-map
         configMap:
           name: mysql
-      - name: exporter-cnf
-        configMap:
-          name: exporter
-          items:
-            - key: slave.cnf
-              path: slave.cnf
   volumeClaimTemplates:
   - metadata:
       name: data
@@ -261,4 +225,3 @@ spec:
         matchLabels:
           db: mysql
           env: dev
-          relate: slave

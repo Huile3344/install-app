@@ -6,9 +6,11 @@ data:
   # 主
   master.cnf: |
     [mysqld]
-    
-    character-set-server=utf8mb4
-    collation-server=utf8mb4_unicode_ci
+
+    # 限制远程登录参数，若没有此项将无法远程登录
+    default-authentication-plugin=mysql_native_password
+    character-set-server=utf8
+    collation-server=utf8_general_ci
     default-storage-engine=INNODB
     
     sql_mode=NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES
@@ -29,9 +31,10 @@ data:
   # 从 
   slave.cnf: |
     [mysqld]
-    
-    character-set-server=utf8mb4
-    collation-server=utf8mb4_unicode_ci
+
+    default-authentication-plugin=mysql_native_password
+    character-set-server=utf8
+    collation-server=utf8_general_ci
     default-storage-engine=INNODB
     
     #Optimize omit
@@ -62,17 +65,19 @@ data:
     # pid-file = /data/mysql/mysqld.pid
     # socket = /data/mysql/mysqld.sock
     # datadir = /var/lib/mysql
-    character_set_server = utf8mb4
-    collation_server = utf8mb4_bin
+    default-authentication-plugin=mysql_native_password
+    character_set_server = utf8
+    collation_server = utf8_general_ci
     back_log = 1024
     lower_case_table_names = 1
     
   # 多主  
   mmaster.cnf: |
     [mysqld]
-    
-    character-set-server=utf8mb4
-    collation-server=utf8mb4_unicode_ci
+
+    default-authentication-plugin=mysql_native_password
+    character-set-server=utf8
+    collation-server=utf8_general_ci
     default-storage-engine=INNODB
     
     sql_mode=NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES

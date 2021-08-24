@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    db: mysql
+    env: dev
+    release: kube-prometheus-stack
+  name: mysqld-exporter
+  namespace: monitoring
+spec:
+  endpoints:
+  - port: exporter
+  namespaceSelector:
+    matchNames:
+      - dev
+  selector:
+    matchLabels:
+      db: mysql
+      env: dev

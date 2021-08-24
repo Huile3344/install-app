@@ -45,7 +45,7 @@ spec:
       env: dev
       relate: master
   # 必须对应一个name是mysql的服务资源
-  serviceName: write-mysql-svc
+  serviceName: mysql
   replicas: 1
   template:
     metadata:
@@ -69,7 +69,7 @@ spec:
           # Add an offset to avoid reserved server-id=0 value.
           echo server-id=$((10 + $ordinal)) >> /mnt/conf.d/server-id.cnf
           # Copy appropriate conf.d files from config-map to emptyDir.
-          cp /mnt/config-map/master.cnf /mnt/conf.d/
+          cp /mnt/config-map/slave.cnf /mnt/conf.d/
         volumeMounts:
         - name: conf
           mountPath: /mnt/conf.d
@@ -114,7 +114,6 @@ spec:
           timeoutSeconds: 1
       - name: xtrabackup
         image: gcr.io/google-samples/xtrabackup:1.0
-        imagePullPolicy: IfNotPresent
         env:
         - name: MYSQL_ROOT_PASSWORD
           valueFrom:
@@ -142,48 +141,12 @@ spec:
           requests:
             cpu: 100m
             memory: 100Mi
-      - name: mysqld-exporter
-        image: prom/mysqld-exporter
-        ports:
-        - name: http
-          containerPort: 9104
-#        command:
-#          - '--collect.my-cnf=/etc/master.cnf'
-#          - '--collect.slave_status'
-#          - '--collect.slave_hosts'
-#          - '--collect.info_schema.processlist'
-#          - '--collect.info_schema.innodb_metrics'
-#          - '--collect.info_schema.innodb_tablespaces'
-#          - '--collect.info_schema.replica_host'
-#          - '--collect.info_schema.innodb_cmp'
-#          - '--collect.info_schema.innodb_cmpmem'
-#        volumeMounts:
-#          - name: exporter-cnf
-#            mountPath: /etc/master.cnf
-#            subPath: master.cnf
-        env:
-          - name: DATA_SOURCE_NAME
-            valueFrom:
-              configMapKeyRef:
-                name: exporter
-                key: dataSourceName
-
-        resources:
-          requests:
-            cpu: 100m
-            memory: 100Mi
       volumes:
       - name: conf
         emptyDir: {}
       - name: config-map
         configMap:
           name: mysql
-      - name: exporter-cnf
-        configMap:
-          name: exporter
-          items:
-            - key: master.cnf
-              path: master.cnf
       - name: data
         persistentVolumeClaim:
           claimName: mysql-master-pvc

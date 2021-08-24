@@ -1,0 +1,21 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: exporter
+data:
+  master.cnf: |
+    [client]
+    user=exporter
+    password=123456
+    #host=mysql-write-svc
+    #port=3306
+    
+  # 从 
+  slave.cnf: |
+    [client]
+    user=exporter
+    password=123456
+    #host=mysql-read-svc
+    #port=3306
+
+  dataSourceName: exporter:123456@(localhost:3306)/
