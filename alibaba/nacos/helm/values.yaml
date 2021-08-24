@@ -29,9 +29,9 @@ nacos:
     db:
       host: 10.181.4.88
       name: nacos_config
-      port: 3306
+      port: 30006
       username: root
-      password: root123
+      password: 123456
       param: characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false
 
 persistence:
