@@ -65,7 +65,7 @@ echo_exec 'systemctl enable --now kubelet'
 echo_exec 'echo_exec "source <(kubectl completion bash)"'
 echo "source <(kubectl completion bash)" >> ~/.bashrc
 
-## 安装 CNI 插件（大多数 Pod 网络都需要，基于 yum 方式会自动安装相关网络插件）：
+## 安装 CNI 插件（大多数 Pod 网络都需要，基于 yum 方式会自动安装相关网络插件 kubernetes-cni）：
 ### 安装cni
 CNI_VERSION="v0.9.1"
 echo_exec 'mkdir -p /opt/cni/bin'

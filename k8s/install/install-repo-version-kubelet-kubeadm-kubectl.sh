@@ -30,6 +30,8 @@ else
   echo_exec "yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes"
 fi
 
+# 额外说明 kubernetes-cni 会被依赖关联安装，大多数 Pod 网络都需要，对应会创建 /opt/cni/bin ，其中会包含网络相关的二进制文件
+
 systemctl enable --now kubelet
 
 # 测试安装的版本是最新的：
