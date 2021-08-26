@@ -27,9 +27,9 @@ nacos:
 #    type: embedded
     type: mysql
     db:
-      host: 10.181.4.88
+      host: write-mysql-svc.dev
       name: nacos_config
-      port: 30006
+      port: 3306
       username: root
       password: 123456
       param: characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false
