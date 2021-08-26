@@ -36,7 +36,7 @@ netstat -tunpl | grep 10252
 ### 安装一些依赖包，方便后面使用
 可按需调整安装的依赖包
 ```shell
-yum install -y conntrack ntpdate ntp ipvsadm ipset jq iptables curl sysstat libseccomp wgetvimnet-tools git
+yum install -y conntrack ntpdate ntp ipvsadm ipset jq iptables curl sysstat libseccomp wget vim net-tools git
 ```
 
 ### 设置防火墙为 Iptables
@@ -69,12 +69,16 @@ setenforce 0 && sed -i 's/^SELINUX=.*/SELINUX=disabled/' /etc/selinux/config
 
     在 ELRepo 中有两个内核选项，一个是 kernel-lt(长期支持版本)，一个是 kernel-ml(主线最新版本)，采用长期支持版本(kernel-lt)，更稳定一些
     ```
-    # 安装ELRepo
+    # 安装ELRepo centos7
     yum install -y https://www.elrepo.org/elrepo-release-7.el7.elrepo.noarch.rpm
+    
+    # 安装ELRepo centos8
+    yum install -y https://www.elrepo.org/elrepo-release-8.el8.elrepo.noarch.rpm
+  
     # 升级Kernel
     yum --enablerepo=elrepo-kernel install -y kernel-lt
     ```
-- 罗列所有内核，确认新内核已经安装
+- 罗列所有内核，确认新内核已经安装 (针对 centos7)
 
     示例如：CentOS Linux (5.4.108-1.el7.elrepo.x86_64) 7 (Core)
     ```
@@ -93,7 +97,7 @@ setenforce 0 && sed -i 's/^SELINUX=.*/SELINUX=disabled/' /etc/selinux/config
     1 : CentOS Linux (3.10.0-693.el7.x86_64) 7 (Core)
     2 : CentOS Linux (0-rescue-5f1fe186a0214fae8c3b96235d409a29) 7 (Core)
     ```
--  设置开机从新内核启动
+-  设置开机从新内核启动 (针对 centos7)
     ```
     grub2-set-default 'CentOS Linux (5.4.108-1.el7.elrepo.x86_64) 7 (Core)'
     ```
@@ -313,7 +317,7 @@ sudo yum-config-manager \
 ```
 ### 安装 docker
 ```
-sudo yum install -y docker-ce docker-ce-cli containerd.io
+sudo yum --allowerasing install -y docker-ce docker-ce-cli containerd.io
 ```
 ### 设置开机启动docker，启动并验证docker
 ```
@@ -984,7 +988,7 @@ front-proxy-ca          May 24, 2031 04:48 UTC   9y              no
   
 ## k8s 的 master 更换 IP
 参考：[k8s的master更换ip](https://www.cnblogs.com/chaojiyingxiong/p/12106590.html)
-已制作成脚本：[k8s辅助脚本](./shell/k8s-assist.sh) 的操作 *change-master-ip*
+已制作成脚本：[k8s辅助脚本](install/k8s-assist.sh) 的操作 *change-master-ip*
 
 k8s的master更换ip后，通信问题出现了问题，我们只需要通过kubeadm init phase命令，重新生成config文件和签名文件就可以了。操作如下：
 

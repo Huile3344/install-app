@@ -1,6 +1,8 @@
 #!/bin/bash
 source /opt/shell/log.sh
 
+set +e
+
 # k8s 辅助脚本工具
 # 使用方式: ./k8s-assist.sh <执行的操作> <必要的参数1> ... <必要的参数N>
 #          示例: ./k8s-assist.sh change-master-ip <旧IP> <新IP>
@@ -95,7 +97,7 @@ function fetchK8sMasterImages() {
     kube-controller-manager:v1.20.5
     kube-scheduler:v1.20.5
     kube-proxy:v1.20.5
-    pause:3.4.1
+    pause:3.2
     etcd:3.4.13-0
     coredns:1.7.0
   )
@@ -106,7 +108,7 @@ function fetchK8sMasterImages() {
 function fetchK8sNodeImages() {
   images=(
     kube-proxy:v1.20.5
-    pause:3.4.1
+    pause:3.2
     coredns:1.7.0
   )
   fetchImages registry.cn-hangzhou.aliyuncs.com/google_containers k8s.gcr.io ${images[*]}
