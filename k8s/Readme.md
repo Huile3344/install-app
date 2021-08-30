@@ -1014,11 +1014,15 @@ k8s的master更换ip后，通信问题出现了问题，我们只需要通过kub
   ```
   service docker restart && service kubelet restart
   ```
-- 将配置文件config输出
-  ```
-  kubectl get nodes --kubeconfig=admin.conf  #  此时已经是通信成功了
-  ```
 - 将kubeconfig默认配置文件替换为admin.conf，这样就可以直接使用kubectl get nodes
   ```
   mv admin.conf ~/.kube/config
   ```
+- 重启主机，(否则端口是被之前的ip占用的)
+  ```
+  reboot
+  ```
+- 将配置文件config输出
+  ```
+  kubectl get nodes --kubeconfig=admin.conf  #  此时已经是通信成功了
+  ```  
