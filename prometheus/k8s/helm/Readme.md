@@ -214,7 +214,7 @@ $ kubectl -n kube-system delete pod kube-proxy-xxx
 ### 安装 Release kube-prometheus-stack
 执行如下命令安装(values-v3.yaml 是对应上面内容修改后的 values.yaml):
 ```
-$ helm -n monitoring install kube-prometheus-stack -f values-v3.yaml prometheus-community/kube-prometheus-stack
+$ helm -n monitoring install kube-prometheus-stack -f values-v3.yaml prometheus-community/kube-prometheus-stack --version 17.2.1
 ```
 
 ### 查看当前 kube-prometheus-stack 的 prometheus 配置信息
