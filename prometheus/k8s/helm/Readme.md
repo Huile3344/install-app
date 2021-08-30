@@ -103,7 +103,8 @@ $ mkdir -pv /etc/kubernetes/manifests.bak
 $ cp /etc/kubernetes/manifests/kube-controller-manager.yaml /etc/kubernetes/manifests.bak
 $ vim /etc/kubernetes/manifests/kube-controller-manager.yaml
 ```
-- `--bind-address127.0.0.1` 修改为 `--bind-address=0.0.0.0`
+- `--bind-address=127.0.0.1` 修改为 `--bind-address=0.0.0.0`
+- 注释掉 `--port=0`
 修改成功后，要等一会儿，k8s会自动重新部署这部分 pod (pod模式部署的)
 
 ### 修改 kube-scheduler
@@ -116,7 +117,8 @@ $ mkdir -pv /etc/kubernetes/manifests.bak
 $ cp /etc/kubernetes/manifests/kube-scheduler.yaml /etc/kubernetes/manifests.bak
 $ vim /etc/kubernetes/manifests/kube-scheduler.yaml
 ```
-- `--bind-address127.0.0.1` 修改为 `--bind-address=0.0.0.0`
+- `--bind-address=127.0.0.1` 修改为 `--bind-address=0.0.0.0`
+- 注释掉 `--port=0`
 修改成功后，要等一会儿，k8s会自动重新部署这部分 pod (pod模式部署的)
 
 ### 修改 kube-proxy
