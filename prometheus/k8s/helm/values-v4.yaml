@@ -154,20 +154,41 @@ alertmanager:
   config:
     global:
       resolve_timeout: 5m
+      smtp_smarthost: 'smtp.163.com:25'
+      smtp_from: 'j1161115494@163.com'
+      smtp_auth_username: 'j1161115494@163.com'
+      smtp_auth_password: 'j1161115494'
     route:
       group_by: ['job']
       group_wait: 30s
       group_interval: 5m
       repeat_interval: 12h
-      receiver: 'null'
+      receiver: 'email'
       routes:
-      - match:
-          alertname: Watchdog
-        receiver: 'null'
+        - match:
+            alertname: Watchdog
+          receiver: 'email'
+#        - receiver: 'email'
+#          matchers:
+#            - alertname='Watchdog'
     receivers:
-    - name: 'null'
+      - name: 'null'
+      - name: 'email'
+        email_configs:
+          - to: '1161115494@qq.com'
     templates:
-    - '/etc/alertmanager/config/*.tmpl'
+      - '/etc/alertmanager/config/*.tmpl'
+#    inhibit_rules:
+#      - source_matchers:
+#          - severity="critical"
+#        target_matchers:
+#          - severity="warning"
+#        # Apply inhibition if the job is the same.
+#        # CAUTION:
+#        #   If all label names listed in `equal` are missing
+#        #   from both the source and target alerts,
+#        #   the inhibition rule will apply!
+#        equal: [ 'job' ]
 
   ## Pass the Alertmanager configuration directives through Helm's templating
   ## engine. If the Alertmanager configuration contains Alertmanager templates,
@@ -668,7 +689,7 @@ grafana:
 
     ## Path for grafana ingress
 #    path: /
-    path: /grafana
+    path: /
 
     pathType: Prefix
 
@@ -788,22 +809,6 @@ grafana:
     selectorLabels:
       name: grafana-data-pv
       release: stable
-
-  env:
-    GF_SERVER_ROOT_URL: "http://localhost:3000/grafana/"
-
-  readinessProbe:
-    httpGet:
-      path: /api/health
-      port: 3000
-
-  livenessProbe:
-    httpGet:
-      path: /api/health
-      port: 3000
-    initialDelaySeconds: 60
-    timeoutSeconds: 30
-    failureThreshold: 10
 
 ## Component scraping the kube api server
 ##
