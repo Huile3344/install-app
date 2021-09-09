@@ -86,12 +86,8 @@ $ mkdir -pv /etc/kubernetes/manifests.bak
 $ cp /etc/kubernetes/manifests/etcd.yaml /etc/kubernetes/manifests.bak
 $ vim /etc/kubernetes/manifests/etcd.yaml
 ```
-- `--listen-metrics-urls=http://127.0.0.1:2381` 修改为 `--listen-metrics-urls=http://127.0.0.1:2381,http://<hostIp>:2381`
+- `--listen-client-urls=https://127.0.0.1:2379,https://<hostIp>:2379` 修改为 `--listen-client-urls=https://127.0.0.1:2379,https://<hostIp>:2379,http://<hostIp>:2379`
 修改成功后，要等一会儿，k8s会自动重新部署这部分 pod (pod模式部署的)
-#### 修改 helm values.yaml
-找到 kubeEtcd 下的 service，并修改其 port 和 targetPort，否则需要使用https方式，还需要额外的证书配置
-- `port: 2379` 修改为 `port: 2381`
-- `targetPort: 2379` 修改为 `targetPort: 2381`
 
 ### 修改 kube-controller-manager
 默认 kube-controller-manager 仅对 127.0.0.1 暴露 /metrics，因此需要修改
