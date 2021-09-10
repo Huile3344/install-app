@@ -449,8 +449,8 @@ controller:
     # 修改处: 对外开放端口
     type: NodePort
     nodePorts:
-      http: "30080"
-      https: "30443"
+      http: "80"
+      https: "443"
       tcp:
         3306: "30006"
         3308: "30008"

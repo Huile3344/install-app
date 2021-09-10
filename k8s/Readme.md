@@ -9,6 +9,15 @@ github: [kubernetes](https://github.com/kubernetes/kubernetes)
 阿里云: [容器服务Kubernetes版](https://help.aliyun.com/document_detail/86987.html?spm=a2c4g.11174283.6.667.715b2ceeBpXV4b)
 
 # kubernetes 安装
+kubernetes 安装
+- [kuboard](https://www.kuboard.cn/install/install-k8s.html)
+- [sealos](https://www.sealyun.com/instructions)
+kubernetes 管理工具
+- [kuboard](https://www.kuboard.cn/install/v3/install-in-k8s.html)
+- [kubespere](https://kubesphere.io/zh/)
+容器的调度与编排系统
+- kubernetes
+- [Rancher](https://docs.rancher.cn/)
 
 
 ## k8s 安装前的一些初始化操作
@@ -310,7 +319,7 @@ sudo yum remove docker \
 ### 使用存储库安装
 #### 设置存储库
 ```
-sudo yum install -y yum-utils
+sudo yum install -y yum-utils device-mapper-persistent-data lvm2
 sudo yum-config-manager \
     --add-repo \
     https://download.docker.com/linux/centos/docker-ce.repo
@@ -555,6 +564,32 @@ NAME     STATUS   ROLES                  AGE    VERSION
 centos   Ready    control-plane,master   168m   v1.20.5
 ```
 
+
+## 修改NodePort的范围
+在 Kubernetes 集群中，NodePort 默认范围是 30000-32767，某些情况下，因为您所在公司的网络策略限制，您可能需要修改 NodePort 的端口范围，本文描述了具体的操作方法。
+
+### 修改kube-apiserver.yaml
+使用 kubeadm 安装 K8S 集群的情况下，您的 Master 节点上会有一个文件 `/etc/kubernetes/manifests/kube-apiserver.yaml` ，修改此文件，
+向其中添加 `--service-node-port-range=0-32767` （请使用您自己需要的端口范围）
+
+### 重启apiserver
+执行以下命令，重启 apiserver
+```
+# 删除 apiserver 的 pod
+kubectl delete pod $(kubectl get pods --selector=component=kube-apiserver -n kube-system --output=jsonpath={.items..metadata.name}) -n kube-system
+```
+### 验证结果
+执行以下命令，验证修改是否生效：
+```
+# 删除 apiserver 的 pod
+kubectl describe  pod $(kubectl get pods --selector=component=kube-apiserver -n kube-system --output=jsonpath={.items..metadata.name}) -n kube-system
+```
+
+**注意**
+- 对于已经创建的NodePort类型的Service，需要删除重新创建
+- 如果集群有多个 Master 节点，需要逐个修改每个节点上的 `/etc/kubernetes/manifests/kube-apiserver.yaml` 文件，并重启 `apiserver`
+
+
 ## 安装 Dashboard
 
 ### 获取 `recommended.yaml` 文件
@@ -619,19 +654,51 @@ kubectl apply -f recommended.yaml
 kubectl -n kubernetes-dashboard get service kubernetes-dashboard
 ```
 
-### 额外创建Dashboard的SA dashboard-admin 管理整个集群
+### 访问
+Kubernetes Dashboard 当前，只支持使用 Bearer Token 登录。 由于 Kubernetes Dashboard 默认部署时，只配置了最低权限的 RBAC。
+因此，我们要创建一个名为 `dashboard-admin` 的 ServiceAccount，再创建一个 ClusterRolebinding，将其绑定到 Kubernetes 集群中默认初始化的 `cluster-admin` 这个 ClusterRole。
+
+#### 使用 yml 创建 Service Account 和 ClusterRoleBinding 
+```
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dashboard-admin
+  namespace: kubernetes-dashboard
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dashboard-admin-crb
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: dashboard-admin
+  namespace: kubernetes-dashboard
+```
+执行如下命令可创建 ServiceAccount 和 ClusterRoleBinding
+```
+kubectl apply -f dashboard-rabc.yaml
+```
+
+#### 使用命令创建 Service Account 和 ClusterRoleBinding 
+##### 额外创建Dashboard的SA dashboard-admin 管理整个集群
 
 ```
 kubectl -n kubernetes-dashboard create serviceaccount dashboard-admin 
 ```
 
-### 授权集群角色
+##### 授权集群角色
 
 ```
 kubectl create clusterrolebinding dashboard-admin-crb --clusterrole=cluster-admin --serviceaccount=kubernetes-dashboard:dashboard-admin
 ```
 
-### 查看用户Token
+#### 查看用户Token
 
 ```
 kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboard get secret | grep dashboard-admin | awk '{print $1}')
@@ -1026,3 +1093,4 @@ k8s的master更换ip后，通信问题出现了问题，我们只需要通过kub
   ```
   kubectl get nodes --kubeconfig=admin.conf  #  此时已经是通信成功了
   ```  
+

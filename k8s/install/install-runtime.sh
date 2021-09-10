@@ -17,7 +17,7 @@ echo_exec 'yum remove docker \
 
 ## 使用存储库安装
 ### 设置存储库
-echo_exec 'yum install -y yum-utils'
+echo_exec 'yum install -y yum-utils device-mapper-persistent-data lvm2'
 echo_exec 'yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo'
 
 ## 安装 docker

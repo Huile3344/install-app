@@ -1,0 +1,87 @@
+# kubeadm 配置文件文档说明: https://pkg.go.dev/k8s.io/kubernetes@v1.20.5/cmd/kubeadm/app/apis/kubeadm/v1beta2
+# InitConfiguration https://pkg.go.dev/k8s.io/kubernetes@v1.20.5/cmd/kubeadm/app/apis/kubeadm/v1beta2#InitConfiguration
+# ClusterConfiguration https://pkg.go.dev/k8s.io/kubernetes@v1.20.5/cmd/kubeadm/app/apis/kubeadm/v1beta2#ClusterConfiguration
+# JoinConfiguration https://pkg.go.dev/k8s.io/kubernetes@v1.20.5/cmd/kubeadm/app/apis/kubeadm/v1beta2#JoinConfiguration
+# KubeProxyConfiguration https://pkg.go.dev/k8s.io/kube-proxy/config/v1alpha1#pkg-types
+# KubeletConfiguration https://pkg.go.dev/k8s.io/kubelet/config/v1beta1#KubeletConfiguration
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: InitConfiguration
+bootstrapTokens:
+- groups:
+  - system:bootstrappers:kubeadm:default-node-token
+  token: abcdef.0123456789abcdef
+  ttl: 24h0m0s
+  usages:
+  - signing
+  - authentication
+localAPIEndpoint:
+  advertiseAddress: 10.180.35.6
+  bindPort: 6443
+nodeRegistration:
+  criSocket: /var/run/dockershim.sock
+  name: master
+  taints:
+  - effect: NoSchedule
+    key: node-role.kubernetes.io/master
+---
+# https://github.com/kubernetes/kubernetes/blob/v1.20.5/cmd/kubeadm/app/apis/kubeadm/v1beta2/types.go
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: ClusterConfiguration
+etcd:
+  local:
+    dataDir: /var/lib/etcd
+    extraArgs:
+      listen-client-urls: "https://127.0.0.1:2379,https://10.180.35.6:2379,http://10.180.35.6:2379"
+networking:
+  dnsDomain: cluster.local
+  podSubnet: 10.100.0.0/16
+  serviceSubnet: 10.96.0.0/12
+kubernetesVersion: v1.20.5
+controlPlaneEndpoint:
+apiServer:
+  timeoutForControlPlane: 4m0s
+  extraArgs:
+    service-node-port-range: "0-32767"
+#  extraVolumes:
+#    name:
+#    hostPath:
+#    mountPath:
+#    readOnly:
+#    pathType:
+controllerManager:
+  extraArgs:
+    bind-address: 0.0.0.0
+    port: 10252
+#  extraVolumes:
+#    name:
+#    hostPath:
+#    mountPath:
+#    readOnly:
+#    pathType:
+scheduler:
+  extraArgs:
+    bind-address: 0.0.0.0
+    port: 10251
+#  extraVolumes:
+#    name:
+#    hostPath:
+#    mountPath:
+#    readOnly:
+#    pathType:
+dns:
+  type: CoreDNS
+certificatesDir: /etc/kubernetes/pki
+imageRepository: k8s.gcr.io
+featureGates: {}
+clusterName: kubernetes
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+# 指定使用的代理模式，如: Linux: ipvs iptables(默认值) userspace Windows: userspace(默认值) kernelspace
+mode: ipvs
+# 开放指标接口给外部访问，默认值: 127.0.0.1:10249
+metricsBindAddress: 0.0.0.0:10249
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+cgroupDriver: systemd

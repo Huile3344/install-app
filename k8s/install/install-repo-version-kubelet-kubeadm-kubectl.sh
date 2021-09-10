@@ -32,8 +32,6 @@ fi
 
 # 额外说明 kubernetes-cni 会被依赖关联安装，大多数 Pod 网络都需要，对应会创建 /opt/cni/bin ，其中会包含网络相关的二进制文件
 
-systemctl enable --now kubelet
-
 # 测试安装的版本是最新的：
 echo_exec "kubeadm version"
 echo_exec "kubelet --version"
@@ -41,6 +39,11 @@ echo_exec "kubectl version --client"
 
 # 开机启动 kubelet
 echo_exec "systemctl enable --now kubelet"
+# 启动 kubelet
+echo_exec "systemctl start --now kubelet"
+# 注意：
+## 如果此时执行 systemctl status kubelet 命令，将得到 kubelet 启动失败的错误提示，
+## 请忽略此错误，因为必须完成后续步骤中 kubeadm init 的操作，kubelet 才能正常启动
 
 # 添加命令行填充提示
 echo_exec "source <(kubectl completion bash)"

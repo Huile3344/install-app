@@ -92,36 +92,26 @@ function fetchImages() {
 
 # 获取k8s master 节点镜像
 function fetchK8sMasterImages() {
-  images=(
-    kube-apiserver:v1.20.5
-    kube-controller-manager:v1.20.5
-    kube-scheduler:v1.20.5
-    kube-proxy:v1.20.5
-    pause:3.2
-    etcd:3.4.13-0
-    coredns:1.7.0
-  )
+  images=$(kubeadm config images list --kubernetes-version=$1 | sed 's#^k8s.gcr.io/##')
   fetchImages registry.cn-hangzhou.aliyuncs.com/google_containers k8s.gcr.io ${images[*]}
 }
 
 # 获取k8s worker 节点镜像
-function fetchK8sNodeImages() {
-  images=(
-    kube-proxy:v1.20.5
-    pause:3.2
-    coredns:1.7.0
-  )
+function fetchK8sWorkerImages() {
+  images=$(kubeadm config images list --kubernetes-version=$1 | grep -v kube-apiserver | grep -v kube-controller-manager | grep -v kube-scheduler | grep -v etcd | sed 's#^k8s.gcr.io/##')
   fetchImages registry.cn-hangzhou.aliyuncs.com/google_containers k8s.gcr.io ${images[*]}
 }
 
 # 获取节点加入集群的命令
 function joinToken() {
-#  controlPlaneHost=`kubectl get nodes -o wide | grep control-plane | awk 'NR==1 {print $6}'`
-  controlPlaneHostPort=`kubectl -n kube-system get pod $(kubectl -n kube-system get pod | grep kube-apiserver | awk '{print $1}') -o yaml | grep advertise-address.endpoint | awk 'NR==1 {print $2}'`
-  token=`kubeadm token create`
-  hash=`openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'`
-#  echo "kubeadm join $controlPlaneHost:6443 --token $token --discovery-token-ca-cert-hash sha256:$hash"
-  echo "kubeadm join $controlPlaneHostPort --token $token --discovery-token-ca-cert-hash sha256:$hash"
+##  controlPlaneHost=`kubectl get nodes -o wide | grep control-plane | awk 'NR==1 {print $6}'`
+#  controlPlaneHostPort=`kubectl -n kube-system get pod $(kubectl -n kube-system get pod | grep kube-apiserver | awk '{print $1}') -o yaml | grep advertise-address.endpoint | awk 'NR==1 {print $2}'`
+#  token=`kubeadm token create`
+#  hash=`openssl x509 -pubkey -in /etc/kubernetes/pki/ca.crt | openssl rsa -pubin -outform der 2>/dev/null | openssl dgst -sha256 -hex | sed 's/^.* //'`
+##  echo "kubeadm join $controlPlaneHost:6443 --token $token --discovery-token-ca-cert-hash sha256:$hash"
+#  echo "kubeadm join $controlPlaneHostPort --token $token --discovery-token-ca-cert-hash sha256:$hash"
+  # 该 token 的有效时间为 2 个小时，2小时内，您可以使用此 token 初始化任意数量的 worker 节点。
+  kubeadm token create --print-join-command
 }
 
 # 生成自签署的 ca 证书
@@ -168,8 +158,8 @@ case $1 in
     fetch-master-images)
         fetchK8sMasterImages
     ;;
-    fetch-node-images)
-        fetchK8sNodeImages
+    fetch-worker-images)
+        fetchK8sWorkerImages
     ;;
     join-token)
         joinToken
