@@ -24,8 +24,9 @@ exclude=kubelet kubeadm kubectl
 EOF
 fi
 
+# 安装kubelet、kubeadm、kubectl
 if [[ -n $NUM_RELEASE ]]; then
-  echo_exec "yum install -y kubelet-${NUM_RELEASE}-0.x86_64 kubeadm-${NUM_RELEASE}-0.x86_64 kubectl-${NUM_RELEASE}-0.x86_64 --disableexcludes=kubernetes"
+  echo_exec "yum install -y kubelet-${NUM_RELEASE} kubeadm-${NUM_RELEASE} kubectl-${NUM_RELEASE} --disableexcludes=kubernetes"
 else
   echo_exec "yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes"
 fi
