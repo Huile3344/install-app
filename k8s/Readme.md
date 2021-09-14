@@ -10,6 +10,7 @@ github: [kubernetes](https://github.com/kubernetes/kubernetes)
 
 # kubernetes 安装
 kubernetes 安装
+- [安装kubernetes集群（单master节点方式）](https://www.yuque.com/leifengyang/kubesphere/grw8se)
 - [kuboard](https://www.kuboard.cn/install/install-k8s.html)
 - [sealos](https://www.sealyun.com/instructions)
 kubernetes 管理工具
@@ -1094,3 +1095,77 @@ k8s的master更换ip后，通信问题出现了问题，我们只需要通过kub
   kubectl get nodes --kubeconfig=admin.conf  #  此时已经是通信成功了
   ```  
 
+
+## 动态卷供应
+参考:
+- [存储类](https://kubernetes.io/zh/docs/concepts/storage/storage-classes/)
+- [动态卷供应](https://kubernetes.io/zh/docs/concepts/storage/dynamic-provisioning/)
+
+建议先熟悉 `存储类(StroageClass)` 和 `持久卷( PersistentVolume)` 的概念
+
+动态卷供应允许按需创建存储卷。 如果没有动态供应，集群管理员必须手动地联系他们的云或存储提供商来创建新的存储卷， 
+然后在 Kubernetes 集群创建 PersistentVolume 对象来表示这些卷。 
+动态供应功能消除了集群管理员预先配置存储的需要。 相反，它在用户请求时自动供应存储
+
+### 背景
+动态卷供应的实现基于 `storage.k8s.io` API 组中的 `StorageClass` API 对象。 集群管理员可以根据需要定义多个 `StorageClass` 对象，每个对象指定一个卷插件（又名 `provisioner`）， 卷插件向卷供应商提供在创建卷时需要的数据卷信息及相关参数。
+
+集群管理员可以在集群中定义和公开多种存储（来自相同或不同的存储系统），每种都具有自定义参数集。 该设计也确保终端用户不必担心存储供应的复杂性和细微差别，但仍然能够从多个存储选项中进行选择。
+
+### NFS 制备器/供应器 (nfs provisioner)
+代码仓库 [kubernetes-sigs/sig-storage-lib-external-provisioner](https://github.com/kubernetes-sigs/sig-storage-lib-external-provisioner) 包含一个用于为外部制备器编写功能实现的类库。
+你可以访问代码仓库 kubernetes-sigs/sig-storage-lib-external-provisioner 了解外部驱动列表
+
+NFS 没有内部制备器，但可以使用外部制备器。 也有第三方存储供应商提供自己的外部制备器 [kubernetes-sigs/nfs-subdir-external-provisioner](https://github.com/kubernetes-sigs/nfs-subdir-external-provisioner)
+
+#### Kubernetes NFS Subdir External Provisioner
+NFS Subdir External Provisioner (NFS 子目录外部供应器)是一个自动供应器，它使用您现有的和已经配置的 NFS 服务器来支持通过 Persistent Volume Claims 动态供应 Kubernetes Persistent Volumes。 持久卷被配置为 ${namespace}-${pvcName}-${pvName}。
+
+##### 使用 helm 部署
+执行以下命令安装
+```
+$ helm repo add nfs-subdir-external-provisioner https://kubernetes-sigs.github.io/nfs-subdir-external-provisioner/
+$ helm install nfs-subdir-external-provisioner nfs-subdir-external-provisioner/nfs-subdir-external-provisioner \
+    --set nfs.server=x.x.x.x \
+    --set nfs.path=/exported/path
+```
+默认存储类(StorageClass) 名是 `nfs-client`
+
+##### 改变系统默认存储类
+```
+$ kubectl patch storageclass nfs-client -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+$ kubectl get sc
+# 可看到 nfs-client (default) ，nfs-client 后面拼接了(default)
+```
+
+##### 测试部署pvc
+- 如 `test-pvc.yaml` 文件所示，请确保拥有正确的 `storageClassName`，。
+    ```
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: test-claim
+    spec:
+      storageClassName: nfs-client
+      accessModes:
+        - ReadWriteMany
+      resources:
+        requests:
+          storage: 1Mi
+    ```
+- 部署 yaml
+    ```
+    $ kubectl apply -f test-pvc.yaml --record
+    ```
+- 查看 PVC 绑定情况
+    ```
+    $ kubectl get pvc
+    # 获取到类似如下内容(STATUS 值是 Bound)，表示 pvc 绑定成功
+    NAME           STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+    test-claim   Bound    pvc-90b4f080-7741-4f7c-858f-a21604d0ee0f   1Mi        RWX            nfs-client     99m
+    ```
+- 删除测试 PVC 
+    ```
+    $ kubectl delete pvc test-claim
+    ```
+ 
