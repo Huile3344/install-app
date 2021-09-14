@@ -4,6 +4,8 @@
 # JoinConfiguration https://pkg.go.dev/k8s.io/kubernetes@v1.20.5/cmd/kubeadm/app/apis/kubeadm/v1beta2#JoinConfiguration
 # KubeProxyConfiguration https://pkg.go.dev/k8s.io/kube-proxy/config/v1alpha1#pkg-types
 # KubeletConfiguration https://pkg.go.dev/k8s.io/kubelet/config/v1beta1#KubeletConfiguration
+
+# 利用 kubeadm 创建高可用集群 https://kubernetes.io/zh/docs/setup/production-environment/tools/kubeadm/high-availability/
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: InitConfiguration
 bootstrapTokens:
@@ -23,6 +25,34 @@ nodeRegistration:
   taints:
   - effect: NoSchedule
     key: node-role.kubernetes.io/master
+# 多 master 时添加此配置，master join 的 certificate-key 值
+#certificateKey: "e6a2eb8581237ab72a4f494f30285ec12a9694d750b9785706a83bfcbbbd2204"
+
+#---
+## 多 master 时开启 JoinConfiguration 配置
+#apiVersion: kubeadm.k8s.io/v1beta3
+#kind: JoinConfiguration
+#nodeRegistration:
+#  # 默认是主机名
+#  name:
+#  criSocket: /var/run/dockershim.sock
+#  taints:
+#  - effect: NoSchedule
+#    key: node-role.kubernetes.io/master
+#  kubeletExtraArgs: {}
+#  ignorePreflightErrors: []
+#  # "Always", "IfNotPresent" or "Never" 中的一个值
+#  imagePullPolicy: "IfNotPresent"
+## 默认值：/etc/kubernetes/pki/ca.crt
+#caCertPath: /etc/kubernetes/pki/ca.crt
+#discovery: {}
+#controlPlane:
+#  localAPIEndpoint: {}
+#  # 需要与 InitConfiguration 的 certificateKey 保持一致 值
+#  certificateKey:
+#skipPhases: {}
+#patches: {}
+
 ---
 # https://github.com/kubernetes/kubernetes/blob/v1.20.5/cmd/kubeadm/app/apis/kubeadm/v1beta2/types.go
 apiVersion: kubeadm.k8s.io/v1beta2
