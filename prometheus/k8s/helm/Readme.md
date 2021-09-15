@@ -305,3 +305,8 @@ $ helm -n monitoring uninstall kube-prometheus-stack
 ```
 $ kubectl -n monitoring delete pvc prometheus-kube-prometheus-stack-prometheus-db-prometheus-kube-prometheus-stack-prometheus-0
 ```
+## 手动删除创建的 CRD
+可能部分情况下 crd 版本变动，可能crd会有异常，需要先删掉旧的crd
+```
+$ kubectl delete --ignore-not-found customresourcedefinitions $(kubectl get crd | grep monitoring.coreos.com)
+```
