@@ -13,9 +13,12 @@ kubernetes 安装
 - [安装kubernetes集群（单master节点方式）](https://www.yuque.com/leifengyang/kubesphere/grw8se)
 - [kuboard](https://www.kuboard.cn/install/install-k8s.html)
 - [sealos](https://www.sealyun.com/instructions)
+- [k8s半自动化脚本安装](./install/k8s-recommend-install.sh) 自己整理的相关脚本
+
 kubernetes 管理工具
 - [kuboard](https://www.kuboard.cn/install/v3/install-in-k8s.html)
 - [kubespere](https://kubesphere.io/zh/)
+
 容器的调度与编排系统
 - kubernetes
 - [Rancher](https://docs.rancher.cn/)
@@ -715,7 +718,7 @@ kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboar
     ```
     $ tar -zxvf helm-v3.6.0-linux-amd64.tar.gz
     ```
-- 在解压目中找到 `helm` 程序，移动到需要的目录中(``)，以便 `helm`命令可直接使用
+- 在解压目中找到 `helm` 程序，移动到需要的目录中(`/opt/bin/`)，以便 `helm`命令可直接使用
     ```
     # mv linux-amd64/helm /usr/local/bin/helm
     $ mv linux-amd64/helm /opt/bin/helm
@@ -759,7 +762,6 @@ kubectl -n kubernetes-dashboard describe secret $(kubectl -n kubernetes-dashboar
     POD_NAME=$(kubectl -n ingress-nginx get pods -l app.kubernetes.io/name=ingress-nginx -o jsonpath='{.items[0].metadata.name}')
     kubectl -n ingress-nginx exec -it $POD_NAME -- /nginx-ingress-controller --version
     ```
-- 
 
 ## 至此单机 k8s 安装完成
 
@@ -834,7 +836,7 @@ kubeconfig 文件包含集群参数（CA证书、api server地址)，客户端�
 ### PKI证书和要求
 参考官网：[PKI证书和要求](https://kubernetes.io/zh/docs/setup/best-practices/certificates/)
 
-####证书存放的位置 
+#### 证书存放的位置 
     
 如果你是通过 kubeadm 安装的 Kubernetes，所有证书都存放在 `/etc/kubernetes/pki` 目录下。
 
