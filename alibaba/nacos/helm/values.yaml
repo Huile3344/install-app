@@ -63,8 +63,8 @@ ingress:
     # kubernetes.io/ingress.class: nginx
   # kubernetes.io/tls-acme: "true"
   hosts:
-    - host: play.k8s.com
-      paths: ["/nacos"]
+    - host: nacos.k8s.com
+      paths: ["/"]
 
   tls: [ ]
   #  - secretName: chart-example-tls
