@@ -119,7 +119,7 @@ done
 #  esac
 #done
 
-if [[ "master" -eq $ROLE and "init" -eq $ACTION and -z $IP ]]; then
+if [[ "master" -eq $ROLE && "init" -eq $ACTION && -z $IP ]]; then
   echo " -i或--ip 参数未指定"
   help $SHELL_FILE
   exit 1
@@ -152,9 +152,9 @@ fi
 # 基于以下命令生成默认配置文件，再对应修改
 # kubeadm config print init-defaults > kubeadm-config.yml
 cp kubeadm-config.yml used-kubeadm-config.yml
-sed -i '' 's|10.180.35.6|$IP|g' used-kubeadm-config.yml
-sed -i '' 's|10.244.0.0/16|$POD_SUBNET|g' used-kubeadm-config.yml
-sed -i '' 's|^kubernetesVersion: .*$|kubernetesVersion: $RELEASE|g' used-kubeadm-config.yml
+sed -i 's|10.180.35.6|'$IP'|g' used-kubeadm-config.yml
+sed -i 's|10.244.0.0/16|'$POD_SUBNET'|g' used-kubeadm-config.yml
+sed -i 's|^kubernetesVersion: .*$|kubernetesVersion: '$RELEASE'|g' used-kubeadm-config.yml
 info "初始化 Master 节点"
 kubeadm init --config=used-kubeadm-config.yml --upload-certs | tee kubeadm-init.log
 
@@ -166,7 +166,7 @@ chown $(id -u):$(id -g) $HOME/.kube/config
 export KUBECONFIG=/etc/kubernetes/admin.conf
 
 # 安装网络插件
-source k8s-podnetwork.sh calico ${POD_SUBNET}
+source k8s-podnetwork.sh flannel ${POD_SUBNET}
 
 # 执行如下命令，等待 3-10 分钟，直到所有的容器组处于 Running 状态
 kubectl get pod -n kube-system -o wide -w

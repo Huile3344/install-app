@@ -10,7 +10,7 @@ set +e
 POD_SUBNET=$2
 
 # 下载yaml文件，并修改 POD 的子网段
-if [[ "calico" -eq $1 ]]; then
+if [[ "calico" == $1 ]]; then
   # 下载 yaml
   wget https://docs.projectcalico.org/manifests/calico.yaml
   sed -i "s|# - name: CALICO_IPV4POOL_CIDR|- name: CALICO_IPV4POOL_CIDR|" calico.yaml
@@ -19,8 +19,8 @@ if [[ "calico" -eq $1 ]]; then
 else
   # 下载 yaml，由于网络原因无法直接下载，需翻墙，提前下载好
   #wget https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
-  cp kube-flannel.yaml flannel.yaml
-  sed -i "s|10.244.0.0/16|${POD_SUBNET}|" flannel.yaml
-  kubectl apply -f flannel
+  cp kube-flannel.yml flannel.yml
+  sed -i "s|10.244.0.0/16|${POD_SUBNET}|" flannel.yml
+  kubectl apply -f flannel.yml
 fi
 

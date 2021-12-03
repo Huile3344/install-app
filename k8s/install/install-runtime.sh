@@ -21,7 +21,7 @@ echo_exec 'yum install -y yum-utils device-mapper-persistent-data lvm2'
 echo_exec 'yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo'
 
 ## 安装 docker
-echo_exec 'yum --allowerasing install -y docker-ce docker-ce-cli containerd.io'
+echo_exec 'yum --allowerasing install -y docker-ce docker-ce-cli containerd.io || yum install -y docker-ce docker-ce-cli containerd.io'
 
 ## 设置开机启动docker，启动并验证docker
 echo_exec 'systemctl enable docker && systemctl start docker && docker run hello-world'

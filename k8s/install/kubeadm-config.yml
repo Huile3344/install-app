@@ -64,7 +64,7 @@ etcd:
       listen-client-urls: "https://127.0.0.1:2379,https://10.180.35.6:2379,http://10.180.35.6:2379"
 networking:
   dnsDomain: cluster.local
-  podSubnet: 10.100.0.0/16
+  podSubnet: 10.244.0.0/24
   serviceSubnet: 10.96.0.0/12
 kubernetesVersion: v1.20.5
 controlPlaneEndpoint:

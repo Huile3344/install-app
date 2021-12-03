@@ -125,7 +125,7 @@
 ###  创建共享目录
 ```
 mkdir /var/lib/nfs/data
-chowm -R nfsnobody.nfsnobody /var/lib/nfs/data
+chown -R nfsnobody.nfsnobody /var/lib/nfs/data
 ```
 
 ### 配置端口
