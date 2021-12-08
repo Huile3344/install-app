@@ -2,7 +2,8 @@
 各种应用部署安装方式汇总，如：纯手动执行说明脚本+半自动shell脚本+docker方式+k8s方式安装应用
 
 
-# 各种软件源的配置参考
+# 各种软件源的配置
+参考
     
     http://mirrors.ustc.edu.cn/help/
 
@@ -12,6 +13,79 @@
   * close_yum-cron.sh 关闭 CentOS 中 yum 自动更新软件功能
   * **log.sh** shell脚本 source 该文件后，可支持各种级别shell日志输出(日志带色彩)，大部分脚本中都有对该文件的引用
   * **purge-win-shell.sh** 执行 /opt/shell/purge-win-shell.sh filename 剔除从 windows 拷贝到 linux 的脚本文件换行符多余的 ^M 字符
+
+# Linux 常见网络问题
+## 首选推荐使用桥接模式
+桥接模式的虚拟机可认为是一台和主机隔离的物理机，只要和主机设置成同一个网段（或者同一局域网内可互通的ip即可），
+但是针对公司内部限制mac地址上网的方式就不太好了，还需要配置虚拟机的mac地址
+
+## nat模式虚拟机和主机互ping不同问题
+nat模式的虚拟机和主机使用的是同一个ip地址，虚拟机对外访问走的还是主机的网络，但是解决了公司内部限制mac地址上网的方式
+
+在配置了 NAT 的路由器上，可以把整个网络分成两部分：内部网络  和 外部网络。
+
+### nat模式原理
+NAT（Network Address Translation，网络地址转换），它是一个IETF(Internet Engineering Task Force, Internet工程任务组) 标准，允许一个整体机构以一个公用IP（Internet Protocol）地址出现在Internet上。
+它是一种把内部私有网络地址（IP地址）翻译成合法网络IP地址的技术。NAT 可以让那些使用私有地址的内部网络连接到Internet或其它IP网络上。NAT路由器在将内部网络的数据包发送到公用网络时，在IP包的报头把私有地址转换成合法的IP地址。
+
+原理细节可参考: [NAT 详解](https://blog.csdn.net/freeking101/article/details/77962312/)
+
+### nat配置
+配置参考: [解决设置了NAT模式之后虚拟机和主机之间仍然ping不通的问题](https://blog.csdn.net/qq_40708079/article/details/118716269)
+
+操作步骤：
+- 编辑 -> 虚拟网络编辑器
+  ![nat模式修改1.png](./img/nat模式/nat模式修改1.png "nat模式修改1.png")
+- 进入虚拟网络编辑器，选中 类型值是 `NAT模式` 的 `VMnet8`，按需修改(一般不用修改) `子网IP` 和 `子网掩码`
+  ![nat模式虚拟网络编辑器.png](img/nat模式/nat模式虚拟网络编辑器.png "nat模式虚拟网络编辑器")
+- 进入`NAT设置(S)`，按需修改(一般不用修改) `网关IP(G)`
+  ![nat模式NAT设置.png](img/nat模式/nat模式NAT设置.png "nat模式NAT设置")
+- 进入`DHCP设置(P)`，按需修改(一般不用修改) `起始IP地址(S)` 和 `结束IP地址(E)`
+  ![nat模式DHCP设置.png](img/nat模式/nat模式DHCP设置.png "nat模式DHCP设置")
+- 修改完成后，点击虚拟网络编辑器的 `应用(A)` 按钮 和 `确定` 按钮
+- 进入虚拟机，修改ip地址配置文件 `/etc/sysconfig/network-scripts/ifcfg-ens33`，修改后内容大致如下
+  ```shell
+  TYPE=Ethernet
+  PROXY_METHOD=none
+  BROWSER_ONLY=no
+  # 由dhcp改成none或static，使用静态ip
+  BOOTPROTO=none
+  DEFROUTE=yes
+  IPV4_FAILURE_FATAL=no
+  IPV6INIT=yes
+  IPV6_AUTOCONF=yes
+  IPV6_DEFROUTE=yes
+  IPV6_FAILURE_FATAL=no
+  IPV6_ADDR_GEN_MODE=stable-privacy
+  NAME=ens33
+  UUID=db6dcf23-0b7f-4b10-b9ec-6af2d20b9a19
+  DEVICE=ens33
+  # 改成yes开机启动
+  ONBOOT=yes
+  # 改成固定的ip，即在子网IP的网段
+  IPADDR=192.168.137.128
+  # 子网掩码，要与nat设置中的子网掩码保持一致
+  PREFIX=255.255.255.0
+  # 网关配置，要与nat设置中的网关保持一致
+  GATEWAY=192.168.137.2
+  # DNS
+  DNS1=8.8.8.8
+  DNS2=8.8.8.4
+  
+  ```
+- 重启网卡， `systemctl restat network`
+- 修改主机的虚拟机网卡`VMware Network Adapter VMnet8` IP信息，在子网IP的网段内，机VMnet8网卡IP要和虚拟机IP在同一网段
+  ![nat模式修改VMnet8网卡.png](img/nat模式/nat模式修改VMnet8网卡.png "nat模式修改VMnet8网卡")
+- 主机和虚拟机互ping，此时应该都是能ping通的，虚拟机 `ping www.baidu.com` 应该也是OK的（不OK重启后，重启后就OK）
+- 重启主机和虚拟机！重启主机和虚拟机！重启主机和虚拟机！重要的事情说三遍。再ping应该都是OK的。若不重启可能一开始ping没问题，过一段时间网络又会故障，再怎么修改都没用
+  
+**总之就一句话**：VMnet8网卡（NAT使用的网卡)ip网段要和虚拟机的网段一致，但ip不要一样，配置完成后重启主机和虚拟机
+
+注意:
+- 配置完成后，即使使用命令 `systemctl restart network` 重启网卡，但是 `ping www.baidu.com` 和 `ping 主机ip`仍然可能不通，但是一般主机 `ping 虚拟机ip` 是OK的，此时一般重启一下虚拟机即可
+- 最好在调整主机的虚拟机网卡`VMware Network Adapter VMnet8`，尤其是VMware Workstation的`虚拟网络编辑器`调整网络网段后，重启一下虚拟机，要不然很可能导致配置正确，网络仍然ping不通的问题
+- 若一开始主机和虚拟机是能互ping成功的，但是过一段时间主机又ping不通虚拟机，但是反向是正常的，那么只需要重启一下主机即可。
+- nat模式配置完成后一定要重启一下主机和虚拟机，
 
 # Linux 服务器同步时间命令
 
