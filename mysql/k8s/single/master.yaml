@@ -1,0 +1,80 @@
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: mysql-single-pvc
+spec:
+  storageClassName: nfs-client
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name: mysql-single-sts
+spec:
+  selector:
+    matchLabels:
+      db: mysql
+      env: dev
+  # 必须对应一个name是mysql的服务资源
+  serviceName: mysql-single-svc
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        db: mysql
+        env: dev
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:5.7
+        env:
+        - name: MYSQL_ALLOW_EMPTY_PASSWORD
+          value: "1"
+        #- name: MYSQL_ROOT_PASSWORD
+        #  valueFrom:
+        #    secretKeyRef:
+        #      name: mysql
+        #      key: root_password
+        ports:
+        - name: mysql
+          containerPort: 3306
+          # 若使用Nginx代理tcp，则这部分可注释掉
+          hostPort: 3306
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/mysql
+          subPath: mysql
+        - name: conf
+          mountPath: /etc/mysql/conf.d
+        resources:
+          requests:
+            cpu: 200m
+            memory: 100Mi
+        livenessProbe:
+          exec:
+            command: ["mysqladmin", "ping"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          exec:
+            # Check we can execute queries over TCP (skip-networking is off).
+            command: ["mysql", "-h", "127.0.0.1", "-e", "SELECT 1"]
+          initialDelaySeconds: 5
+          periodSeconds: 2
+          timeoutSeconds: 1
+      volumes:
+      - name: conf
+        configMap:
+          name: mysql-single
+          items:
+            - key: my.cnf
+              path: my.cnf
+      - name: data
+        persistentVolumeClaim:
+          claimName: mysql-single-pvc

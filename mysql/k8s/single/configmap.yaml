@@ -1,0 +1,21 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: mysql-single
+data:
+  # 单机  
+  my.cnf: |
+    [mysql]
+    # 设置mysql客户端默认字符集
+    default-character-set=utf8
+    [mysqld]
+    # pid-file = /data/mysql/mysqld.pid
+    # socket = /data/mysql/mysqld.sock
+    # datadir = /var/lib/mysql
+    default-authentication-plugin=mysql_native_password
+    character_set_server = utf8
+    collation_server = utf8_general_ci
+    back_log = 1024
+    lower_case_table_names = 1
+
+    

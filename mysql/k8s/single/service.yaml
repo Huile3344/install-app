@@ -1,0 +1,18 @@
+# 通过 ingress 的 ConfigMap 可直接代理 mysql 的 tcp 端口，如：30006代理主库的3306 30008代理从库的3306
+
+# 必须要有 mysql-single-svc 这个 service 供 master的 StatefulSet 使用
+kind: Service
+apiVersion: v1
+metadata:
+  name: mysql-single-svc
+  labels:
+    db: mysql
+    env: dev
+spec:
+  selector:
+    db: mysql
+    env: dev
+  clusterIP: None
+  ports:
+  - name: mysql
+    port: 3306
