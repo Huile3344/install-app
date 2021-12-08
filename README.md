@@ -15,6 +15,7 @@
   * **purge-win-shell.sh** 执行 /opt/shell/purge-win-shell.sh filename 剔除从 windows 拷贝到 linux 的脚本文件换行符多余的 ^M 字符
 
 # Linux 常见网络问题
+[VMware Workstation Pro 16产品文档](https://docs.vmware.com/cn/VMware-Workstation-Pro/16.0/com.vmware.ws.using.doc/GUID-0EE752F8-C159-487A-9159-FE1F646EE4CA.html) 可查看虚拟机网络配置等使用说明
 ## 首选推荐使用桥接模式
 桥接模式的虚拟机可认为是一台和主机隔离的物理机，只要和主机设置成同一个网段（或者同一局域网内可互通的ip即可），
 但是针对公司内部限制mac地址上网的方式就不太好了，还需要配置虚拟机的mac地址
