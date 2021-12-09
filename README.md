@@ -85,8 +85,13 @@ NAT（Network Address Translation，网络地址转换），它是一个IETF(Int
 注意:
 - 配置完成后，即使使用命令 `systemctl restart network` 重启网卡，但是 `ping www.baidu.com` 和 `ping 主机ip`仍然可能不通，但是一般主机 `ping 虚拟机ip` 是OK的，此时一般重启一下虚拟机即可
 - 最好在调整主机的虚拟机网卡`VMware Network Adapter VMnet8`，尤其是VMware Workstation的`虚拟网络编辑器`调整网络网段后，重启一下虚拟机，要不然很可能导致配置正确，网络仍然ping不通的问题
-- 若一开始主机和虚拟机是能互ping成功的，但是过一段时间主机又ping不通虚拟机，但是反向是正常的，那么只需要重启一下主机即可。
-- nat模式配置完成后一定要重启一下主机和虚拟机，
+- 若一开始主机和虚拟机是能互ping成功的，但是过一段时间主机又ping不通虚拟机，但是反向是正常的，那么很可能是主机开了vpn之类的东西，会导致主机ping不通虚拟机（是个大坑）。
+
+### 虚拟机nat模式事故
+[虚拟机nat模式事故](./虚拟机nat模式事故.md)
+
+
+
 
 # Linux 服务器同步时间命令
 
