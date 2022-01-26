@@ -286,7 +286,7 @@ curl -O https://arthas.aliyun.com/arthas-boot.jar
 1. 然后用`java -jar`的方式启动：
 
 ```
-java -jar arthas-boot.jar
+java -jar -Dfile.encoding=utf-8 arthas-boot.jar
 ```
 
 **注意：**首次启动 `arthas-boot.jar` 会对应的在 `user home` 下生成 arthas 的相关目录并下载依赖包：
@@ -621,7 +621,85 @@ ts=2020-10-12 14:02:00; [cost=1.5803ms] result=@ArrayList[
 
 
 
+## vmtool 
 
+`vmtool` 利用`JVMTI`接口，实现查询内存对象，强制GC等功能。
+
+### 获取对象
+
+```
+$ vmtool --action getInstances --className java.lang.String --limit 10
+@String[][
+    @String[com/taobao/arthas/core/shell/session/Session],
+    @String[com.taobao.arthas.core.shell.session.Session],
+    @String[com/taobao/arthas/core/shell/session/Session],
+    @String[com/taobao/arthas/core/shell/session/Session],
+    @String[com/taobao/arthas/core/shell/session/Session.class],
+    @String[com/taobao/arthas/core/shell/session/Session.class],
+    @String[com/taobao/arthas/core/shell/session/Session.class],
+    @String[com/],
+    @String[java/util/concurrent/ConcurrentHashMap$ValueIterator],
+    @String[java/util/concurrent/locks/LockSupport],
+]
+```
+
+> 通过 `--limit`参数，可以限制返回值数量，避免获取超大数据时对JVM造成压力。默认值是10。
+
+### 指定 classloader name
+
+```
+vmtool --action getInstances --classLoaderClass org.springframework.boot.loader.LaunchedURLClassLoader --className org.springframework.context.ApplicationContext
+```
+
+### 指定 classloader hash
+
+可以通过`sc`命令查找到加载class的 classloader。
+
+```
+$ sc -d org.springframework.context.ApplicationContext
+ class-info        org.springframework.boot.context.embedded.AnnotationConfigEmbeddedWebApplicationContext
+ code-source       file:/private/tmp/demo-arthas-spring-boot.jar!/BOOT-INF/lib/spring-boot-1.5.13.RELEASE.jar!/
+ name              org.springframework.boot.context.embedded.AnnotationConfigEmbeddedWebApplicationContext
+...
+ class-loader      +-org.springframework.boot.loader.LaunchedURLClassLoader@19469ea2
+                     +-sun.misc.Launcher$AppClassLoader@75b84c92
+                       +-sun.misc.Launcher$ExtClassLoader@4f023edb
+ classLoaderHash   19469ea2
+```
+
+然后用`-c`/`--classloader` 参数指定：
+
+```
+vmtool --action getInstances -c 19469ea2 --className org.springframework.context.ApplicationContext
+```
+
+### 指定返回结果展开层数
+
+> `getInstances` action返回结果绑定到`instances`变量上，它是数组。
+
+> 通过 `-x`/`--expand` 参数可以指定结果的展开层次，默认值是1。
+
+```
+vmtool --action getInstances -c 19469ea2 --className org.springframework.context.ApplicationContext -x 2
+```
+
+### 执行表达式
+
+> `getInstances` action返回结果绑定到`instances`变量上，它是数组。可以通过`--express`参数执行指定的表达式。
+
+```
+vmtool --action getInstances --classLoaderClass org.springframework.boot.loader.LaunchedURLClassLoader --className org.springframework.context.ApplicationContext --express 'instances[0].getBeanDefinitionNames()'
+```
+
+### 强制GC
+
+```
+vmtool --action forceGc
+```
+
+- 可以结合 [vmoption](https://arthas.aliyun.com/doc/vmoption.html) 命令动态打开`PrintGC`开关。
+
+  
 
 ## trace 链路追踪
 
@@ -759,7 +837,7 @@ thread -b
 
 再用命令  `java -jar arthas-boot.jar `启动
 
-### 通过`jad`/`mc`/`redefine` 命令实现动态更新代码的功能。
+### 通过`jad`/`mc`/`redefine`(retransform) 命令实现动态更新代码的功能。
 
 目前，访问 http://localhost/user/0 ，会返回500异常：
 
@@ -820,7 +898,9 @@ Affect(row-cnt:1) cost in 1748 ms.
 
 
 
-### redefine 重新加载class
+### redefine 重新加载class 
+
+推荐使用 retransform 命令
 
 **作用**：加载外部的`.class`文件，redefine jvm已加载的类。
 
