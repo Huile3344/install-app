@@ -2,6 +2,22 @@
 
 ## Linux 下命令说明
 
+### 范例
+
+- hostname
+
+  >查看主机名
+
+- hostname -i
+
+  >查看ip
+
+- hostname centos
+
+  >临时将主机名改为 centos，也可使用 set-hostname centos
+
+
+
 ### hostname命令描述
 hostname 用于显示和设置主机名
 
@@ -25,6 +41,8 @@ nodename - 显示或设置系统的DECnet节点名
 - `hostname newname` 命令来修改主机名，不会永久保存，当机器重启之后，就失效了
 - 修改 `/etc/hosts` 文件，永久保存修改的主机名，重启生效
 
+
+
 ### man hostname 查看使用手册
 
 #### 描述
@@ -33,7 +51,10 @@ nodename - 显示或设置系统的DECnet节点名
 hostname 是一个用来设置或显示当前主机,域或者系统的节点名的程序.许多联网程序使用这些名字来 标识机器.NIS/YP同样也使用域名.
 ```
 
+
+
 ##### 获取名字
+
 如果不调用任何参数,程序即显示当前的名字:
 
 hostname 会打印系统的名字为通过 gethostname(2) 函数返回的值.
@@ -45,7 +66,9 @@ nodename 会打印系统的DECnet节点名为通过 getnodename(2) 函数返回�
 dnsdomainname 会打印FQDN(完全资格域名)的域部分.系统的完整的FQDN可使用 hostname --fqdn 返回.
 
 
+
 ##### 设置名称
+
 如果带一个参数或者带 --file 选项调用的话,命令即设置主机名,NIS/YP域名或者节点名.
 
 注意,只有超级用户才可以修改这些名字.
@@ -54,7 +77,10 @@ dnsdomainname 会打印FQDN(完全资格域名)的域部分.系统的完整的FQ
 
 每次系统启动时,主机名通常在  /etc/rc.d/rc.inet1  或   /etc/init.d/boot   (一般通过读取文件的内容,其中包括了主机名,例如,   /etc/hostname)中设置.
 
+
+
 ##### FQDN
+
 你不能使用该命令修改FQDN(通过 hostname --fqdn 返回) 或者DNS域名(通过 dnsdomainname 返回).系统的FQDN是一个由 resolver(3) 返回的主机名.
 
 从技术上说:FQDN指的是使用 gethostbyname(2) 以返回 gethostname (2) 所返回主机名的名字.  DNS域名是第一个圆点之后的部分.
@@ -62,7 +88,7 @@ dnsdomainname 会打印FQDN(完全资格域名)的域部分.系统的完整的FQ
 因此它依赖于你修改方式的配置(通常在 /etc/host.conf 中).通常(如果hosts文件在DNS或NIS之前解析)你可以在 /etc/hosts 中修改.
 
 
-#### 
+
 
 #### 命令选项总览
 
@@ -82,6 +108,8 @@ nisdomainname [-v]
 ypdomainname [-v]
 ```
 
+
+
 #### 命令参数
 
 | 参数               | 描述                                                         |
@@ -100,24 +128,7 @@ ypdomainname [-v]
 
 
 
-#### 范例
 
-- hostname
-
-  >查看主机名
-
-- hostname -i
-
-  >查看ip
-
-- hostname centos
-
-  >临时将主机名改为 centos，也可使用 set-hostname centos
-
-- route add default gw mango-gw
-
-  > 加入一条缺省路由(如果无法匹配其它路由则用它)。使用此路由的所有分组将通过网关"mango-gw"进行传输。实际使用此路由的设备取决于如何到达"mango-gw" - 先前必须设好到"mango-gw"的静态路由。
-  
 
 ## Windows下命令说明
 

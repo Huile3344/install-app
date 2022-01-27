@@ -51,12 +51,16 @@ ifconfig 用于配置常驻内核的网络接口。它用于在引导成功时�
 
 如果跟在 interface(接口) 名称后的第一个参数是它支持地址族的名称， 那么这个地址族被用于解码和显示所有的协议地址。 当前支持的地址族包括 inet (TCP/IP，缺省)， inet6 ( IPv6 ) ， ax25 ( AMPR 无线分组 )， ddp ( Appletalk 2 代)， ipx ( Novell IPX ) 和 netrom ( AMPR 无线分组)。按照ISO C标准的规定，以点十进制表示法提供的所有数字可以是十进制、八进制或十六进制（即，前导0x或0X表示十六进制；否则，前导“0”表示八进制；否则，数字解释为十进制）。十六进制和八进制数字的使用不符合RFC，因此不鼓励使用。
 
+
+
 #### 命令选项总览
 
 ```shell
 ifconfig [-v] [-a] [-s] [interface]
 ifconfig [-v] interface [aftype] options | address ...
 ```
+
+
 
 #### 命令参数
 
