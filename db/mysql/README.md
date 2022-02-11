@@ -1,7 +1,29 @@
+# mysql 知识点
+
+单机知识点
+- 红黑树、B树、B+树，为什么mysql使用B+树，而HashMap使用链表和红黑树
+- 索引类型
+- sql 调优，explain 列
+- mvcc
+- 缓存页、排序缓存等缓存
+- innodb 和 myisam 等其他引擎优劣和适用场景
+集群知识点  
+- binlog、redolog、undolog，及实现原理
+- binlog、redolog 二阶段提交  
+- mysql 一致性实现原理
+- mysql 原子性实现原理
+- 中继日志
+- 主从复制搭建
+- 双主双从，互为主备搭建
+- 主从复制延迟问题
+故障排查
+- information_schema 常用表说明
+- 死锁
+- 锁超时
+其他常见问题
+- mysql账号无法登录
+
 # mysql 常用定位问题脚本
-
-
-
 ## 基本概念
 
 ### processlist 表的解释
