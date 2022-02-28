@@ -466,6 +466,7 @@ networking:
 #### 1.19 及之前的版本开启 IPVS 方式
 在yml后面追加以下内容
 ```
+
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
@@ -479,6 +480,7 @@ mode: ipvs
 
 在yml后面追加以下内容
 ```
+
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
