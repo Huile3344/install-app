@@ -91,7 +91,7 @@ Cloning into 'app'...
 
 换个协议试试，一般就正常了
 ```shell
-$ git clone --depth=1 ssh://yyyy.yyyy.com/a/b/app.git
+$ git clone ssh://yyyy.yyyy.com/a/b/app.git
 Cloning into 'app'...
 The authenticity of host '[yyyy.yyyy.com] ([x.x.x.x])' can't be established.
 RSA key fingerprint is SHA256:XXX.
@@ -106,6 +106,8 @@ Resolving deltas: 100% (2/2), done.
 Checking connectivity... done.
 
 ```
+
+更新git版本，目前发现有部分版本会有有类似问题
 
 ## git 如何删除已经add的文件
 
