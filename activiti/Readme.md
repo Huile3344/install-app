@@ -74,7 +74,7 @@ global.gateway.domain=192.168.0.6
 ### 卸载 Activiti Cloud
 
 ```
-kubectl -n activiti7 uninstall activiti-cloud-full-example
+helm -n activiti7 uninstall activiti-cloud-full-example
 ```
 
 
