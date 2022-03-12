@@ -39,7 +39,7 @@ nodename - 显示或设置系统的DECnet节点名
 - hostname –f 显示完整的主机名和域名
 - hostname –i 显示当前机器的 ip 地址
 - `hostname newname` 命令来修改主机名，不会永久保存，当机器重启之后，就失效了
-- 修改 `/etc/hosts` 文件，永久保存修改的主机名，重启生效
+- 修改 `/etc/hostname` 文件，永久保存修改的主机名，重启生效
 
 
 
