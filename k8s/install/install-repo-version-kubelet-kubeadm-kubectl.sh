@@ -23,12 +23,12 @@ gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors
 exclude=kubelet kubeadm kubectl
 EOF
 fi
-
+# ps: 由于官网未开放同步方式, 可能会有索引gpg检查失败的情况, 这时请用 yum install -y --nogpgcheck kubelet kubeadm kubectl 安装
 # 安装kubelet、kubeadm、kubectl
 if [[ -n $NUM_RELEASE ]]; then
-  echo_exec "yum install -y kubelet-${NUM_RELEASE} kubeadm-${NUM_RELEASE} kubectl-${NUM_RELEASE} --disableexcludes=kubernetes"
+  echo_exec "yum install -y --nogpgcheck kubelet-${NUM_RELEASE} kubeadm-${NUM_RELEASE} kubectl-${NUM_RELEASE} --disableexcludes=kubernetes"
 else
-  echo_exec "yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes"
+  echo_exec "yum install -y --nogpgcheck kubelet kubeadm kubectl --disableexcludes=kubernetes"
 fi
 
 # 额外说明 kubernetes-cni 会被依赖关联安装，大多数 Pod 网络都需要，对应会创建 /opt/cni/bin ，其中会包含网络相关的二进制文件
