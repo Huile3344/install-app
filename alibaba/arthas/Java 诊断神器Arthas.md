@@ -1,19 +1,6 @@
 # Java 诊断神器Arthas
 
-## 常用的Java诊断工具
-
-### jdk自带
-
-- jps
-- jvisualvm
-- jstack
-- jstat
-- jconsole
-- jhat
-- jinfo
-- 等等
-
-### 其他诊断工具
+遇到线上Java应用的问题，我们通常是使用哪些工具，以及怎么定位和处理问题的，常见的Java应用的问题又有哪些呢？
 
 ## 常见的JVM故障
 
@@ -23,6 +10,22 @@
 - 栈溢出
 - 资源泄露
 - 等等
+
+## 常用的Java诊断工具
+
+### jdk自带
+
+- jps
+- jvisualvm
+- jstack
+- jstat
+- jconsole
+- jmap
+- jhat
+- jinfo
+- 等等
+
+### 其他诊断工具
 
 ### 示例：死锁问题定位和解决步骤
 
@@ -102,6 +105,8 @@
 
 
 
+遇到上面的问题我们可以用jstack进行定位处理；要是遇到内存问题，则需要使用jmap和jhat处理；通常我们还会遇到一些并发问题，服务重启就好了，以及我的代码为什么没有执行，是代码没打包上去吗，为什么那行代码就是没执行，我测试运行正常，怎么上线就异常了等等问题，这时候我们会想，要是我们能线上debug，JUnit的方法测试就好了
+
 
 
 ## 为什么使用Arthas
@@ -110,13 +115,14 @@ Arthas 是Alibaba开源的Java诊断工具，深受开发者喜爱。
 
 当你遇到以下类似问题而束手无策时，Arthas可以帮助你解决：
 
-1. **这个类从哪个 jar 包加载的？为什么会报各种类相关的 Exception？**
-2. **我改的代码为什么没有执行到？难道是我没 commit？分支搞错了？**
-3. **遇到问题无法在线上 debug，难道只能通过加日志再重新发布吗？**
-4. **线上遇到某个用户的数据处理有问题，但线上同样无法 debug，线下无法重现！**
-5. **是否有一个全局视角来查看系统的运行状况？**
-6. **有什么办法可以监控到JVM的实时运行状态？**
-7. **怎么快速定位应用的热点，生成火焰图**？
+1. 这个类从哪个 jar 包加载的？为什么会报各种类相关的 Exception？
+2. 我改的代码为什么没有执行到？难道是我没 commit？分支搞错了？
+3. 遇到问题无法在线上 debug，难道只能通过加日志再重新发布吗？
+4. 线上遇到某个用户的数据处理有问题，但线上同样无法 debug，线下无法重现！
+5. 是否有一个全局视角来查看系统的运行状况？
+6. 有什么办法可以监控到JVM的实时运行状态？
+7. 怎么快速定位应用的热点，生成火焰图？
+8. 怎样直接从JVM内查找某个类的实例？
 
 Arthas支持JDK 6+，支持Linux/Mac/Windows，采用命令行交互模式，同时提供丰富的 Tab 自动补全功能，进一步方便进行问题的定位和诊断。
 
@@ -126,10 +132,11 @@ Arthas支持JDK 6+，支持Linux/Mac/Windows，采用命令行交互模式，同
 
 - [Arthas GitHub 网址](https://github.com/alibaba/arthas)
 - [Arthas 中文官网地址](https://arthas.aliyun.com/zh-cn/) （更多命令和使用细节可查看该网址）
+- [Arthas Idea 插件](https://www.yuque.com/arthas-idea-plugin/help/pe6i45)
 
 
 
-### 需要了解的其他内容
+### 最好能了解的其他内容
 
 - **OGNL** -- **对象导航图语言**（Object Graph Navigation Language） 官方指南参考:
 
@@ -255,11 +262,11 @@ Arthas支持JDK 6+，支持Linux/Mac/Windows，采用命令行交互模式，同
 - 查找类: `sc -d *UserController`
 - 查找类加载器: `sc -d *UserController | grep classLoaderClass`
 
-### jad/mc/redefine
+### jad/mc/retransform
 
 - 反编译类到本地: `jad --source-only com.example.demo.arthas.user.UserController > UserController.java`
 - 使用指定类的类加载器编译类: `mc -c 38af3868 UserController.java -d D:\opt\arthas`
-- 使用指定类的类加载器重新加载类: `redefine -c 38af3868 "D:\opt\arthas\com\example\demo\arthas\user\UserController.class"`
+- 使用`retransform`命令重新加载新编译的类: `retransform  "D:\opt\arthas\com\example\demo\arthas\user\UserController.class"`
 
 ### 日志相关
 
@@ -358,6 +365,12 @@ pid: 71560
 time: 2018-11-28 19:16:24
  
 $
+```
+
+### 指定进程启动arthas
+
+```
+java -jar arthas-boot.jar <PID>
 ```
 
 
@@ -619,6 +632,79 @@ ts=2020-10-12 14:02:00; [cost=1.5803ms] result=@ArrayList[
 
 如果想完全退出arthas，可以执行`stop`命令。
 
+#### 释放已存在的 arthas 连接
+
+##### 方案一：
+
+使用telnet，连接上已存在的session，再使用stop命令停止
+
+```
+telnet 127.0.0.1 3658
+stop
+```
+
+
+
+##### 方案二：
+
+arthas-client.jar 在 arthas-boot.jar 启动时会被下载到本地，通常在 ``~/.arthas/lib/<version>/arthas/arthas-client.jar``
+
+```
+java -jar arthas-client.jar 127.0.0.1 3658 -c "stop"
+```
+
+
+
+## 表达式核心变量
+
+https://arthas.aliyun.com/doc/advice-class.html
+
+无论是匹配表达式也好、观察表达式也罢，他们核心判断变量都是围绕着一个 Arthas 中的通用通知对象 `Advice` 进行。
+
+它的简略代码结构如下
+
+```
+public class Advice {
+ 
+    private final ClassLoader loader;
+    private final Class<?> clazz;
+    private final ArthasMethod method;
+    private final Object target;
+    private final Object[] params;
+    private final Object returnObj;
+    private final Throwable throwExp;
+    private final boolean isBefore;
+    private final boolean isThrow;
+    private final boolean isReturn;
+    
+    // getter/setter  
+}  
+```
+
+这里列一个表格来说明不同变量的含义
+
+| 变量名    | 变量解释                                                     |
+| --------- | ------------------------------------------------------------ |
+| loader    | 本次调用类所在的 ClassLoader                                 |
+| clazz     | 本次调用类的 Class 引用                                      |
+| method    | 本次调用方法反射引用                                         |
+| target    | 本次调用类的实例                                             |
+| params    | 本次调用参数列表，这是一个数组，如果方法是无参方法则为空数组 |
+| returnObj | 本次调用返回的对象。当且仅当 `isReturn==true` 成立时候有效，表明方法调用是以正常返回的方式结束。如果当前方法无返回值 `void`，则值为 null |
+| throwExp  | 本次调用抛出的异常。当且仅当 `isThrow==true` 成立时有效，表明方法调用是以抛出异常的方式结束。 |
+| isBefore  | 辅助判断标记，当前的通知节点有可能是在方法一开始就通知，此时 `isBefore==true` 成立，同时 `isThrow==false` 和 `isReturn==false`，因为在方法刚开始时，还无法确定方法调用将会如何结束。 |
+| isThrow   | 辅助判断标记，当前的方法调用以抛异常的形式结束。             |
+| isReturn  | 辅助判断标记，当前的方法调用以正常返回的形式结束。           |
+
+所有变量都可以在表达式中直接使用，如果在表达式中编写了不符合 OGNL 脚本语法或者引入了不在表格中的变量，则退出命令的执行；用户可以根据当前的异常信息修正`条件表达式`或`观察表达式`
+
+- 特殊用法请参考：https://github.com/alibaba/arthas/issues/71
+- OGNL表达式官网：https://commons.apache.org/proper/commons-ognl/language-guide.html
+
+
+
+## [特殊用法请参考](https://github.com/alibaba/arthas/issues/71)
+
 
 
 ## vmtool 
@@ -837,7 +923,7 @@ thread -b
 
 再用命令  `java -jar arthas-boot.jar `启动
 
-### 通过`jad`/`mc`/`redefine`(retransform) 命令实现动态更新代码的功能。
+### 通过`jad`/`mc`/`retransform`命令实现动态更新代码的功能。
 
 目前，访问 http://localhost/user/0 ，会返回500异常：
 
@@ -898,37 +984,29 @@ Affect(row-cnt:1) cost in 1748 ms.
 
 
 
-### redefine 重新加载class 
+### retransform 重新加载class 
 
-推荐使用 retransform 命令
-
-**作用**：加载外部的`.class`文件，redefine jvm已加载的类。
+**作用**：加载外部的`.class`文件，retransform jvm已加载的类。
 
 #### 常见问题
 
-- redefine的class不能修改、添加、删除类的field和method，包括方法参数、方法名称及返回值
-- 如果mc失败，可以在本地开发环境编译好class文件，上传到目标系统，使用redefine热加载class
-- 目前redefine 和watch/trace/jad/tt等命令冲突，以后重新实现redefine功能会解决此问题
-
-> 注意， redefine后的原来的类不能恢复，redefine有可能失败（比如增加了新的field），参考jdk本身的文档。
-
-> `reset`命令对`redefine`的类无效。如果想重置，需要`redefine`原始的字节码。
-
-> `redefine`命令和`jad`/`watch`/`trace`/`monitor`/`tt`等命令会冲突。执行完`redefine`之后，如果再执行上面提到的命令，则会把`redefine`的字节码重置。 原因是jdk本身redefine和Retransform是不同的机制，同时使用两种机制来更新字节码，只有最后修改的会生效。
+- retransform的class不能修改、添加、删除类的field和method，包括方法参数、方法名称及返回值
+- 正在跑的函数，没有退出不能生效
+- 如果mc失败，可以在本地开发环境编译好class文件，上传到目标系统，使用retransform热加载class
 
 
 
-使用`redefine`命令重新加载新编译好的`UserController.class`：
+使用`retransform`命令重新加载新编译好的`UserController.class`：
 
 ```
-$ redefine "D:\opt\arthas\com\example\demo\arthas\user\UserController.class"
+$ retransform "D:\opt\arthas\com\example\demo\arthas\user\UserController.class"
 ```
 
 
 
 ### 热修改代码结果
 
-`redefine`成功之后，再次访问 [https://localhost/user/0](https://localhost/user/0) ，结果是：
+`retransform`成功之后，再次访问 [https://localhost/user/0](https://localhost/user/0) ，结果是：
 
 ```
 {"id":0,"name":"name0"}
