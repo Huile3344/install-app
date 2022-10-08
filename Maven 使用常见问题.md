@@ -9,6 +9,7 @@
    ![mvn_step2](img/maven/mvn_step2.png)
    
 ## idea debug 调试 maven 编译打包过程
+[Maven插件调试方法](https://baijiahao.baidu.com/s?id=1710067999442376558&wfr=spider&for=pc)
 [maven-debugging-intellij](https://spin.atomicobject.com/2020/08/20/maven-debugging-intellij/)
 
 ## java.lang.IllegalArgumentException: Malformed \uxxxx encoding
