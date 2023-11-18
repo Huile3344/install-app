@@ -56,7 +56,7 @@ vm.overcommit_memory                = 1 # 不检查物理内存是否够用
 vm.panic_on_oom                     = 0 # 开启 OOM
 fs.inotify.max_user_instances       = 8192
 fs.inotify.max_user_watches         = 1048576
-fs.file-max                         = 52706963
+fs.file-max                         = 52706963 # 最大打开文件描述符数量
 fs.nr_open                          = 52706963
 net.netfilter.nf_conntrack_max      = 2310720
 EOF
