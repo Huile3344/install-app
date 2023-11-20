@@ -133,10 +133,13 @@ clusterName: kubernetes
 # kube-proxy 支持的参数官网：https://kubernetes.io/docs/reference/command-line-tools-reference/kube-proxy/
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
+## 开放指标接口给外部访问，默认值: 127.0.0.1:10249
+#metricsBindAddress: 0.0.0.0:10249
 # 指定使用的代理模式，如: Linux: ipvs iptables(默认值) userspace Windows: userspace(默认值) kernelspace
+# 用于给 metallb 使用
 mode: ipvs
-# 开放指标接口给外部访问，默认值: 127.0.0.1:10249
-metricsBindAddress: 0.0.0.0:10249
+ipvs:
+  strictARP: true
 ---
 # 初始化 kubelet 使用的配置文件，最终会生成到 /var/lib/kubelet/config.yaml 文件中
 # 详细配置请参考官网：https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/
