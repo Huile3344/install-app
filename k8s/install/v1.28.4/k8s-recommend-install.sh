@@ -30,7 +30,8 @@ function help () {
 }
 
 source /opt/shell/log.sh
-
+ARCH=$(case $(uname -m) in x86_64) echo -n amd64 ;; aarch64) echo -n arm64 ;; *) echo -n $(uname -m) ;; esac)
+OS=$(uname | awk '{print tolower($0)}')
 SHELL_FILE=$0
 POD_SUBNET=10.244.0.0/16
 ACTION=join
@@ -185,5 +186,20 @@ export KUBECONFIG=/etc/kubernetes/admin.conf
 # 安装网络插件
 source k8s-podnetwork.sh calico ${POD_SUBNET}
 
+# 给 master 节点打 taint，允许控制平面节点上调度 Pod
+kubectl taint nodes --all node-role.kubernetes.io/master-
+
 # 执行如下命令，等待 3-10 分钟，直到所有的容器组处于 Running 状态
 kubectl get pod -n kube-system -o wide -w
+
+# 安装 helm
+source k8s-assist.sh install-helm v3.13.2
+
+# 安装 metallb
+source k8s-assist.sh install-metallb helm 4.7.14
+
+# 安装 operator-sdk
+source k8s-assist.sh install-operator-sdk v1.32.0
+
+# 安装 istio
+source k8s-assist.sh install-istio 1.20.0 default
