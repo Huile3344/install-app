@@ -63,6 +63,7 @@ echo "source <(kubectl completion bash)" >> ~/.bashrc
 
 ## 安装 CNI 插件（大多数 Pod 网络都需要，基于 yum 方式会自动安装相关网络插件 kubernetes-cni）：
 ### 安装cni
+# 若基于yum安装，在安装 kubeadm 时会依赖安装 kubernetes-cni 其等价于此插件
 CNI_VERSION="v1.3.0"
 echo_exec 'mkdir -p /opt/cni/bin'
 sudo mkdir -p "$DEST"
@@ -75,6 +76,7 @@ echo_exec 'tar -xzf cni-plugins-linux-${ARCH}-${CNI_VERSION}.tgz -C /opt/cni/bin
 ### 安装 crictl
 #### 定义要下载命令文件的目录。
 #### 安装 crictl（kubeadm/kubelet 容器运行时接口（CRI）所需）
+# 若基于yum安装，在安装 kubeadm 时会依赖安装 cri-tools 其等价于此插件
 CRICTL_VERSION="v1.28.0"
 echo_exec 'curl -LO "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz"'
 echo_exec 'tar -xzf crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz -C $DOWNLOAD_DIR'
