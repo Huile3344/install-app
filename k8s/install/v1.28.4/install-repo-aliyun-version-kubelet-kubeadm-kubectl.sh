@@ -22,6 +22,7 @@ repo_gpgcheck=1
 gpgkey=https://mirrors.aliyun.com/kubernetes/yum/doc/yum-key.gpg https://mirrors.aliyun.com/kubernetes/yum/doc/rpm-package-key.gpg
 exclude=kubelet kubeadm kubectl
 EOF
+yum clean all && yum makecache
 fi
 # ps: 由于官网未开放同步方式, 可能会有索引gpg检查失败的情况, 这时请用 yum install -y --nogpgcheck kubelet kubeadm kubectl 安装
 # 安装kubelet、kubeadm、kubectl

@@ -133,17 +133,29 @@ fi
 #info "role=$ROLE ip=$IP podSubnet=$POD_SUBNET version=$RELEASE"
 
 # k8s master/worker 安装准备
-source k8s-prepare.sh
-# 安装 容器运行时
-source install-runtime.sh
+source k8s-prepare.sh $POD_SUBNET
+# 安装 容器运行时， 参数1:docker安装版本(空字符表示最新版)，参数2:docker HTTP_PROXY，参数3:docker HTTPS_PROXY，参数4:docker NO_PROXY
+source install-runtime.sh "" "http://192.168.137.1:7890" "http://192.168.137.1:7890" "localhost,127.0.0.0/8,172.17.0.0/16,10.244.0.0/16,docker.io,192.168.0.0/16,aliyuncs.com"
+# 安装cri-docker
+source install-cri-dockerd.sh
 # 安装 kubelet kubeadm kubectl
-source install-repo-version-kubelet-kubeadm-kubectl.sh $RELEASE
-# 下载 k8s 镜像需要的镜像
+source install-repo-k8s-version-kubelet-kubeadm-kubectl.sh $RELEASE
+# 下载 k8s 需要的镜像，默认k8s镜像仓库: registry.k8s.io；阿里云k8s镜像仓库: registry.cn-hangzhou.aliyuncs.com/google_containers
+imageRepository="registry.k8s.io"
+# 这里是预先下载 k8s 需要的镜像，其实这部分下载脚本可不执行，kubeadm 中已经修改了镜像仓库，会包含下载镜像
 if [[ "master" -eq $ROLE ]]; then
-  source k8s-assist.sh fetch-master-images $RELEASE
+  source k8s-assist.sh fetch-master-images $RELEASE $imageRepository
+  if [ 0 -ne $? ]; then
+    info "获取k8s镜像失败，请检查网络"
+    exit 1
+  fi
   [[ "init" -ne $ACTION ]] && exit 0
 else
-  source k8s-assist.sh fetch-worker-images $RELEASE
+  source k8s-assist.sh fetch-worker-images $RELEASE $imageRepository
+  if [ 0 -ne $? ]; then
+    info "获取k8s镜像失败，请检查网络"
+    exit 1
+  fi
   exit 0
 fi
 
@@ -151,12 +163,17 @@ fi
 
 # 基于以下命令生成默认配置文件，再对应修改
 # kubeadm config print init-defaults > kubeadm-config.yml
-cp kubeadm-config.yml used-kubeadm-config.yml
+echo_exec "cp kubeadm-config.yml used-kubeadm-config.yml"
 sed -i 's|10.180.35.6|'$IP'|g' used-kubeadm-config.yml
 sed -i 's|10.244.0.0/16|'$POD_SUBNET'|g' used-kubeadm-config.yml
 sed -i 's|^kubernetesVersion: .*$|kubernetesVersion: '$RELEASE'|g' used-kubeadm-config.yml
+sed -i 's|^imageRepository: .*$|imageRepository: '$imageRepository'|g' used-kubeadm-config.yml
 info "初始化 Master 节点"
-kubeadm init --config=used-kubeadm-config.yml --upload-certs | tee kubeadm-init.log
+kubeadm init --config=used-kubeadm-config.yml --upload-certs --v=5 | tee kubeadm-init.log
+if [ 0 -ne $? ]; then
+  info "kubeadm init 异常"
+  exit 1
+fi
 
 # 配置 kubectl
 rm -rf $HOME/.kube/
@@ -166,7 +183,7 @@ chown $(id -u):$(id -g) $HOME/.kube/config
 export KUBECONFIG=/etc/kubernetes/admin.conf
 
 # 安装网络插件
-source k8s-podnetwork.sh flannel ${POD_SUBNET}
+source k8s-podnetwork.sh calico ${POD_SUBNET}
 
 # 执行如下命令，等待 3-10 分钟，直到所有的容器组处于 Running 状态
 kubectl get pod -n kube-system -o wide -w

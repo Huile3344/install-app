@@ -3,6 +3,8 @@ source /opt/shell/log.sh
 
 set +e
 
+POD_SUBNET=$1
+
 # k8s 安装前的一些初始化操作
 ## 安装一些依赖包，方便后面使用
 echo_exec 'yum install -y conntrack ntpdate ntp ipvsadm ipset jq iptables curl sysstat libseccomp wget vim net-tools git'
@@ -15,10 +17,11 @@ echo_exec 'yum -y install iptables-services && systemctl start iptables && syste
 
 ## 关闭 SELINUX
 echo_exec "swapoff -a && sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab"
-echo_exec "setenforce 0 && sed -i 's/^SELINUX=.*/SELINUX=disabled/' /etc/selinux/config"
+echo_exec "setenforce 0 && sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config"
 
 
 ## 安装和配置的先决条件：
+## 官网: https://kubernetes.io/docs/setup/production-environment/container-runtimes/
 cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
 overlay
 br_netfilter
@@ -63,7 +66,7 @@ EOF
 ### 应用 sysctl 参数而无需重新启动
 echo_exec 'sysctl --system'
 ### 添加 iptables 规则，使 k8s 中的pod可连接外部网络, 需要配置 net.ipv4.conf.all.forwarding=1，将 10.244.0.0/16 改成实际网段
-echo_exec 'iptables -t nat -I POSTROUTING -s 10.244.0.0/16 -j MASQUERADE'
+echo_exec 'iptables -t nat -I POSTROUTING -s '${POD_SUBNET}' -j MASQUERADE'
 echo_exec 'iptables -P FORWARD ACCEPT'
 
 

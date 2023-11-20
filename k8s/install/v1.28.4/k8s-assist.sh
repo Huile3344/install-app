@@ -95,14 +95,20 @@ function fetchImages() {
 
 # 获取k8s master 节点镜像
 function fetchK8sMasterImages() {
-  images=$(kubeadm config images list --kubernetes-version=$1 | sed 's#^k8s.gcr.io/##')
-  fetchImages registry.cn-hangzhou.aliyuncs.com/google_containers k8s.gcr.io ${images[*]}
+  #images=$(kubeadm config images list --kubernetes-version=$1 | sed 's#^registry.k8s.io/##')
+  #fetchImages registry.cn-hangzhou.aliyuncs.com/google_containers registry.k8s.io ${images[*]}
+  #使用新方式拉取k8s镜像
+  kubeadm config images list --v=5 --kubernetes-version=$1 --image-repository=$2
+  kubeadm config images pull --v=5 --kubernetes-version=$1 --image-repository=$2 --cri-socket unix:///run/cri-dockerd.sock
 }
 
 # 获取k8s worker 节点镜像
 function fetchK8sWorkerImages() {
-  images=$(kubeadm config images list --kubernetes-version=$1 | grep -v kube-apiserver | grep -v kube-controller-manager | grep -v kube-scheduler | grep -v etcd | sed 's#^k8s.gcr.io/##')
-  fetchImages registry.cn-hangzhou.aliyuncs.com/google_containers k8s.gcr.io ${images[*]}
+  #master使用新方式拉取k8s镜像，此处不需要执行了
+
+  #images=$(kubeadm config images list --kubernetes-version=$1 | grep -v kube-apiserver | grep -v kube-controller-manager | grep -v kube-scheduler | grep -v etcd | sed 's#^registry.k8s.io/##')
+  #fetchImages $2 registry.k8s.io ${images[*]}
+  echo "nothing to do"
 }
 
 # 获取节点加入集群的命令
@@ -182,10 +188,10 @@ case $1 in
         done
     ;;
     fetch-master-images)
-        fetchK8sMasterImages $2
+        fetchK8sMasterImages $2 $3
     ;;
     fetch-worker-images)
-        fetchK8sWorkerImages $2
+        fetchK8sWorkerImages $2 $3
     ;;
     join-worker-token)
         joinWorkerToken

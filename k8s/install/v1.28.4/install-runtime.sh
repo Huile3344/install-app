@@ -2,14 +2,17 @@
 
 # 安装在最新版本示例 ./install-runtime.sh
 
-# 和 v1.20.5 的 kubeadm 依赖的版本对应的docker最高版本 19.03.15-3
-# 安装指定版本示例 ./install-runtime.sh 19.03.15-3
+# 和 v1.28.4 的 kubeadm 依赖的版本对应的docker最高版本
+# 安装指定版本示例 ./install-runtime.sh
 
 source /opt/shell/log.sh
 
 set +e
 
 NUM_RELEASE="${1}"
+HTTP_PROXY=${2}
+HTTPS_PROXY=${3}
+NO_PROXY=${4}
 
 # kubernetes 容器运行时安装 https://kubernetes.io/zh/docs/setup/production-environment/container-runtimes/
 
@@ -35,6 +38,14 @@ else
    echo_exec 'yum --allowerasing install -y docker-ce docker-ce-cli containerd.io || yum install -y docker-ce docker-ce-cli containerd.io'
 fi
 
+# 为 docker 添加代理
+if  [[ -n $HTTP_PROXY ]]; then
+  # ExecStart= 开头的行上面加上以下三行
+  # Environment="HTTP_PROXY=${HTTP_PROXY}"
+  # Environment="HTTPS_PROXY=${HTTPS_PROXY}"
+  # Environment="NO_PROXY=${NO_PROXY}"
+  sed -i "s|^ExecStart=.*|Environment=\"HTTP_PROXY=${HTTP_PROXY}\"\nEnvironment=\"HTTPS_PROXY=${HTTPS_PROXY}\"\nEnvironment=\"NO_PROXY=${NO_PROXY}\"\n&|" /usr/lib/systemd/system/docker.service
+fi
 ## 设置开机启动docker，启动并验证docker
 echo_exec 'systemctl enable docker && systemctl start docker && docker run hello-world'
 
