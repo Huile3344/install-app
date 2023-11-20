@@ -72,6 +72,7 @@ kind: ClusterConfiguration
 etcd:
   local:
     dataDir: /var/lib/etcd
+    # extraArgs 支持的参数
     extraArgs:
       listen-client-urls: "https://127.0.0.1:2379,https://10.180.35.6:2379,http://10.180.35.6:2379"
 networking:
@@ -84,6 +85,7 @@ controlPlaneEndpoint: "10.180.35.6:6443"
 # 写入到 /etc/kubernetes/manifests/kube-apiserver.yaml
 apiServer:
   timeoutForControlPlane: 4m0s
+  # extraArgs 支持的参数 https://kubernetes.io/zh-cn/docs/reference/command-line-tools-reference/kube-apiserver/
   extraArgs:
     service-node-port-range: "0-32767"
 #  extraVolumes:
@@ -94,10 +96,11 @@ apiServer:
 #    pathType:
 
 # 写入到 /etc/kubernetes/manifests/kube-controller-manager.yaml
-controllerManager:
-  extraArgs:
-    bind-address: 0.0.0.0
-    port: "10252"
+#controllerManager:
+#  # extraArgs 支持的参数 https://kubernetes.io/zh-cn/docs/reference/command-line-tools-reference/kube-controller-manager/
+#  extraArgs:
+#    bind-address: 0.0.0.0
+#    secure-port: "10257"
 #  extraVolumes:
 #    name:
 #    hostPath:
@@ -106,10 +109,11 @@ controllerManager:
 #    pathType:
 
 # 写入到 /etc/kubernetes/manifests/kube-scheduler.yaml
-scheduler:
-  extraArgs:
-    bind-address: 0.0.0.0
-    port: "10251"
+#scheduler:
+#  # extraArgs 支持的参数 https://kubernetes.io/zh-cn/docs/reference/command-line-tools-reference/kube-scheduler/
+#  extraArgs:
+#    bind-address: 0.0.0.0
+#    secure-port: "10259"
 #  extraVolumes:
 #    name:
 #    hostPath:
@@ -126,7 +130,7 @@ clusterName: kubernetes
 # 或者查看已导出的 kube-proxy-config.yml 文件
 #   kubectl -n kube-system get configmaps kube-proxy -o yaml > kube-proxy-config.yml
 # 详细配置请参考官网: https://pkg.go.dev/k8s.io/kube-proxy/config/v1alpha1#KubeProxyConfiguration
-# 或官网：https://kubernetes.io/docs/reference/command-line-tools-reference/kube-proxy/
+# kube-proxy 支持的参数官网：https://kubernetes.io/docs/reference/command-line-tools-reference/kube-proxy/
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 # 指定使用的代理模式，如: Linux: ipvs iptables(默认值) userspace Windows: userspace(默认值) kernelspace
@@ -136,7 +140,7 @@ metricsBindAddress: 0.0.0.0:10249
 ---
 # 初始化 kubelet 使用的配置文件，最终会生成到 /var/lib/kubelet/config.yaml 文件中
 # 详细配置请参考官网：https://kubernetes.io/docs/reference/config-api/kubelet-config.v1beta1/
-# 或官网: https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/
+# kubelet 支持的参数官网: https://kubernetes.io/docs/reference/command-line-tools-reference/kubelet/
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 cgroupDriver: systemd
