@@ -80,6 +80,18 @@ Docker Hub：**https://hub.docker.com** 搜索镜像，获取镜像说明、使�
  
 # docker 使用代理(有个小坑)
 [官网参考](https://docs.docker.com/config/daemon/systemd/#http-proxy)
+## 推荐方式
+在 Docker Engine 23.0 及更高版本中，可以在 daemon.json 文件中为守护进程配置代理行为：
+```
+{
+  "proxies": {
+    "http-proxy": "http://10.181.4.8:7890",
+    "https-proxy": "http://10.181.4.8:7890",
+    "no-proxy": "localhost,127.0.0.0/8,docker-registry.example.com,docker.io,aliyuncs.com"
+  }
+}
+```
+## 旧方式
 ```
 $ vim /lib/systemd/system/docker.service
 # 在 ExecStart= 上面加上以下3行内容，注意：HTTPS_PROXY已要设置和HTTP_PROXY一样，除非开了https的代理
